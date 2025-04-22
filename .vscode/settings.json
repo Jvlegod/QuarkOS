@@ -4,6 +4,7 @@
         "mem.h": "c",
         "cstdlib": "c",
         "stddef.h": "c",
-        "typeinfo": "c"
+        "typeinfo": "c",
+        "ktypes.h": "c"
     }
 }

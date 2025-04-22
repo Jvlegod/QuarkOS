@@ -14,14 +14,14 @@ void mem_test() {
 void task1() {
     while(1) {
         uart_puts("Task1 running\n");
-        task_yield();
+        // task_yield();
     }
 }
 
 void task2() {
     while(1) {
         uart_puts("Task2 running\n");
-        task_yield();
+        // task_yield();
     }
 }
 
@@ -30,7 +30,7 @@ void task_test() {
     task_create(task2, 2);
     
     while(1) {
-        task_yield();
+        // task_yield();
     }
 }
 

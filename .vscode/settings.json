@@ -1,5 +1,9 @@
 {
     "files.associations": {
-        "types.h": "c"
+        "types.h": "c",
+        "mem.h": "c",
+        "cstdlib": "c",
+        "stddef.h": "c",
+        "typeinfo": "c"
     }
 }

@@ -1,7 +1,6 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 
-// https://github.com/qemu/qemu/blob/master/include/hw/riscv/virt.h
 #define MAXNUM_CPU 8
 
 /*

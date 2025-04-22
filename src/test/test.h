@@ -3,5 +3,6 @@
 
 void mem_test();
 void uart_test();
+void task_test();
 
 #endif /* __TEST_H__ */

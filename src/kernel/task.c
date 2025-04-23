@@ -40,7 +40,7 @@ void task_create(void (*entry)(void), int task_id) {
 void timer_handler(struct context **arg) {
     MTIMECMP = MTIME + 10000000; // 1s
     
-    uart_puts("enter to timer_handler\n");
+    uart_printf("enter to timer_handler\n");
 }
 
 void task_yield() {

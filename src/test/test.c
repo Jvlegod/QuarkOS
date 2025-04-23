@@ -3,6 +3,9 @@
 #include "uart.h"
 #include "task.h"
 
+#define TEST_PRINTF(fmt, ...) \
+    uart_printf("[TEST]: " fmt , ##__VA_ARGS__)
+    
 void mem_test() {
     int *arr = (int *)mem_alloc(1024 * sizeof(int));
     if (arr) {
@@ -13,14 +16,14 @@ void mem_test() {
 
 void task1() {
     while(1) {
-        uart_puts("Task1 running\n");
+        TEST_PRINTF("Task1 running\n");
         // task_yield();
     }
 }
 
 void task2() {
     while(1) {
-        uart_puts("Task2 running\n");
+        TEST_PRINTF("Task2 running\n");
         // task_yield();
     }
 }
@@ -35,5 +38,8 @@ void task_test() {
 }
 
 void uart_test() {
-    uart_puts("Hello, QuarkOS!\n");
+    int a = 1;
+    int b = -23;
+    TEST_PRINTF("Hello, QuarkOS!\n");
+    TEST_PRINTF("Hello, QuarkOS! %d %d\n", a, b);
 }

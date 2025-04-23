@@ -15,7 +15,7 @@ static void idle_task() {
 
 void task_init() {
     write_csr(mtvec, (uint64_t)trap_entry);
-    write_csr(mscratch, (uint64_t)&tasks[0]); // task0 as kernel task
+    write_csr(mscratch, (uint64_t)&tasks[0].ctx); // task0 as kernel task
     
     timer_init();
 
@@ -37,21 +37,10 @@ void task_create(void (*entry)(void), int task_id) {
     t->ctx.mepc = (uint64_t)entry; // expection ret addr
 }
 
-void timer_handler() {
+void timer_handler(struct context **arg) {
     MTIMECMP = MTIME + 10000000; // 1s
     
-    struct context *old = &tasks[current_task].ctx;
-    current_task = (current_task + 1) % task_count;
-    struct context *new = &tasks[current_task].ctx;
-    
-    write_csr(mscratch, (uint64_t)&tasks[current_task]);
-    
-    __asm__ volatile (
-        "mv a0, %0\n"
-        "mv a1, %1\n"
-        "jal ctx_switch"
-        :: "r"(old), "r"(new)
-    );
+    uart_puts("enter to timer_handler\n");
 }
 
 void task_yield() {

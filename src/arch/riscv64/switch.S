@@ -4,12 +4,12 @@
 
 # M mode
 trap_entry:
-    beqz sp, 1f
+    csrrw sp, mscratch, sp
     addi sp, sp, -35 * 8
     
     sd ra,  0 * 8(sp)  # x1
     sd sp,  1 * 8(sp)  # x2
-    sd t0,  2 * 8(sp)  # x5
+    // t0
     sd t1,  3 * 8(sp)  # x6
     sd t2,  4 * 8(sp)  # x7
     sd a0,  5 * 8(sp)  # x10
@@ -45,27 +45,20 @@ trap_entry:
     sd t0, 32 * 8(sp)  # mepc
     csrr t0, mcause
     sd t0, 33 * 8(sp)  # mcause
-    csrr t0, mtval
-    sd t0, 34 * 8(sp)  # mtval
-    
-    j 2f
 
-1:
-    mv sp, a0
+    sd t0,  2 * 8(sp)  # x5
     
-2:
-    mv a0, sp        # 参数1：struct context指针
-    csrr a1, mcause  # 参数2：中断原因
-    csrr a2, mepc    # 参数3：异常PC
-    jal timer_handler
+    mv a0, sp        # arg1：struct context pointer
+    call timer_handler # TODO: here we will change to handler_trap
     
     ld t0, 32 * 8(sp)
     csrw mepc, t0     # mepc
     ld t0, 31 * 8(sp)
     csrw mstatus, t0  # mstatus
     
+    csrrw sp, mscratch, sp // restore
     ld ra,  0 * 8(sp)
-    ld sp,  1 * 8(sp)
+    // sp
     ld t0,  2 * 8(sp)
     ld t1,  3 * 8(sp)
     ld t2,  4 * 8(sp)
@@ -93,11 +86,12 @@ trap_entry:
     ld s9, 26 * 8(sp)
     ld s10,27 * 8(sp)
     ld s11,28 * 8(sp)
-    ld gp, 29 * 8(sp)
+    // gp
     ld tp, 30 * 8(sp)
+    ld sp,  1 * 8(sp)
+    ld gp, 29 * 8(sp)
     
     addi sp, sp, 35 * 8
-    csrrw sp, mscratch, sp
     
     mret
 

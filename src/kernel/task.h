@@ -2,8 +2,12 @@
 #define __TASK_H__
 #include "list.h"
 
-#define MAX_TASKS 4
-#define STACK_SIZE 4096
+#define MAX_TASKS 1024
+#define HARTS_NUM 8
+#define USER_STACK_SIZE 4096
+#define USER_STACKS_SIZE USER_STACK_SIZE * MAX_TASKS
+#define KERNEL_STACK_SIZE 1024
+#define KERNEL_STACKS_SIZE KERNEL_STACK_SIZE * HARTS_NUM
 
 // task context
 struct context {
@@ -45,13 +49,23 @@ struct context {
     uint64_t mtval;
 };
 
-struct task {
-    uint8_t stack[STACK_SIZE]; // task stack
-    struct context ctx;        // task context
-    int task_id;
+enum task_state {
+    TASK_UNCREATE,
+    TASK_CREATE,
+    TASK_READY,
+    TASK_RUNNING,
+    TASK_BLOCKED,
+    TASK_SLEEPING,
+    TASK_ZOMBIE
 };
 
-void task_init();
+struct task {
+    struct context ctx;        // task context
+    int task_id;
+    enum task_state status;
+};
+
+void task_init(int hart_id);
 void task_create(void (*entry)(void), int task_id);
 void task_yield();
 void timer_init();

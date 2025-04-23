@@ -1,10 +1,23 @@
 .section .text
+
+.macro GET_KERNEL_STACK hartid
+    la   t0, _kernel_stack_top
+    li   t1, KERNEL_STACK_SIZE
+    mul  t1, t1, \hartid
+    sub  sp, t0, t1
+.endm
+
 .global trap_entry
 .align 4
-
 # M mode
 trap_entry:
-    csrrw sp, mscratch, sp
+    csrrw t0, mscratch, sp
+    beqz t0, 1f
+    mv sp, t0 
+    j 2f
+1:
+    la sp, _kernel_stack_top
+2:
     addi sp, sp, -35 * 8
     
     sd ra,  0 * 8(sp)  # x1
@@ -45,10 +58,11 @@ trap_entry:
     sd t0, 32 * 8(sp)  # mepc
     csrr t0, mcause
     sd t0, 33 * 8(sp)  # mcause
-
+    csrr t0, mtval
+    sd t0, 34 * 8(sp)  # mtval
     sd t0,  2 * 8(sp)  # x5
-    
-    mv a0, sp        # arg1：struct context pointer
+
+    mv a0, sp          # arg1：struct context pointer
     call timer_handler # TODO: here we will change to handler_trap
     
     ld t0, 32 * 8(sp)

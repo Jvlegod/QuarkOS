@@ -27,7 +27,8 @@ endif
 
 # optimals
 ifeq ($(BUILD_TYPE),debug)
-    CFLAGS += -O0 -g
+    CFLAGS += -O0 -ggdb3
+    LDFLAGS += -nostdlib
 else ifeq ($(BUILD_TYPE),release)
     CFLAGS += -O2 -DNDEBUG
     LDFLAGS += -flto
@@ -50,6 +51,33 @@ INCLUDE_FLAGS := $(addprefix -I,$(INCLUDE_DIRS))
 
 CFLAGS += $(INCLUDE_FLAGS)
 
+all: $(KERNEL_BIN)
+
+# gdb
+QEMU_GDB_PORT = 1234
+GDBINIT_FILE = $(BUILD_DIR)/.gdbinit
+
+# gdb init
+$(GDBINIT_FILE):
+	@echo "Automatic generation of GDB initialization files..."
+	@echo "set architecture riscv:rv64" > $@
+	@echo "target remote :$(QEMU_GDB_PORT)" >> $@
+	@echo "file $(KERNEL_ELF)" >> $@
+	@echo "b _start" >> $@
+
+debug: $(KERNEL_ELF) $(GDBINIT_FILE)
+	@echo "Start QEMU Debug Server (Ctrl+A X to exit)..."
+	@echo "In another terminal: make gdb"
+	qemu-system-riscv64 -bios none -machine virt -kernel $(KERNEL_ELF) \
+	    -nographic -S -gdb tcp::$(QEMU_GDB_PORT)
+
+# GDB remote
+GDB = riscv64-unknown-elf-gdb
+gdb:
+	@echo "Starting the GDB Debugger..."
+	$(GDB) -x $(GDBINIT_FILE)
+
+
 $(BUILD_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) $(COMMON_FLAGS) $(WARNINGS) -I$(SRC_DIR) -c $< -o $@
@@ -66,7 +94,6 @@ $(KERNEL_BIN): $(KERNEL_ELF)
 
 .PHONY: all clean run
 
-all: $(KERNEL_BIN)
 
 clean:
 	rm -rf build

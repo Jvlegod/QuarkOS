@@ -1,5 +1,6 @@
-.equ HART_STACK_SIZE,  1024
-.equ MAX_HARTS,   4 /* max hart num(TODO: support multiple harts) */
+.equ USER_STACK_SIZE,  4096
+.equ KERNEL_STACK_SIZE,  1024
+.equ MAX_HARTS,   8 /* max hart num(TODO: support multiple harts) */
 
 .section .text.init
 .global _start
@@ -11,8 +12,8 @@ _start:
     /* now we only support one hart(zero)*/
     bnez    a0, park_hart
 
-    la      a1, _stack_end
-    li      a2, HART_STACK_SIZE
+    la      a1, _kernel_stack_top
+    li      a2, KERNEL_STACK_SIZE
     li      a3, MAX_HARTS
 
     mul     a4, a0, a2 /* hart stack offset：hartid * STACK_SIZE */

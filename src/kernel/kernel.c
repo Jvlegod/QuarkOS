@@ -10,7 +10,7 @@ void start_kernel(void)
 	mem_init((uintptr_t)_heap_start, (uintptr_t)_heap_end);
 	mem_test();
 	// task init should after uart and mem.
-	task_init();
+	task_init(0); // hart_id
 	task_test();
 
 	while (1);

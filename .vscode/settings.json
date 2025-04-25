@@ -5,6 +5,11 @@
         "cstdlib": "c",
         "stddef.h": "c",
         "typeinfo": "c",
-        "ktypes.h": "c"
+        "ktypes.h": "c",
+        "uart.h": "c",
+        "platform.h": "c",
+        "interrupt.h": "c",
+        "printf.h": "c",
+        "kprintf.h": "c"
     }
 }

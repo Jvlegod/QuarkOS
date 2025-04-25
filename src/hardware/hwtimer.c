@@ -1,8 +1,20 @@
 #include "interrupt.h"
+#include "task.h"
+#include "kprintf.h"
 
+void timer_load(uint64_t intervel) {
+    int hartid = read_tp();
+    MTIMECMP(hartid) = MTIME + intervel;
+}
 void timer_init() {
-    MTIMECMP = MTIME + TIMER_INTERVAL;
+    timer_load(TIMER_INTERVAL);
+    write_csr(mie, read_csr(mie) | MIE_MTIE); // MTIE enable Timer int
+}
 
-    write_csr(mie, read_csr(mie) | (1 << 7)); // MTIE enable Timer int
-    write_csr(mstatus, read_csr(mstatus) | (1 << 3)); // MIE enable global int
+void handle_timer_interrupt() {
+    static int d = 0;
+    kprintf("\n----- ticks %d -----\n", d);
+    d ++;
+    timer_load(TIMER_INTERVAL);
+    schedule();
 }

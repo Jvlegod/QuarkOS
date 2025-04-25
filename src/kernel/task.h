@@ -43,10 +43,8 @@ struct context {
     uint64_t gp;   // x3
     uint64_t tp;   // x4
 
-    uint64_t mstatus;
-    uint64_t mepc;
-    uint64_t mcause;
-    uint64_t mtval;
+    uint64_t mstatus; // mstatus
+    uint64_t mepc; // mepc
 };
 
 enum task_state {
@@ -68,8 +66,6 @@ struct task {
 void task_init(int hart_id);
 void task_create(void (*entry)(void), int task_id);
 void task_yield();
-void timer_init();
-
-extern void trap_entry(void);
+void schedule();
 
 #endif /* __TASK_H__ */

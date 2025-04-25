@@ -1,6 +1,7 @@
 #ifndef __PLATFORM_H__
 #define __PLATFORM_H__
 #include "ktypes.h"
+#include "regs.h"
 #define MAXNUM_CPU 8
 
 /*
@@ -15,19 +16,19 @@
  */
 
 #define UART0 0x10000000L
+#define CLINT_BASE 0x2000000L
+#define PLIC_BASE 0x0c000000L
 
-#define CLINT_BASE 0x2000000
+// CLINT
 #define MTIME (*(volatile uint64_t*)(CLINT_BASE + 0xBFF8))
-#define MTIMECMP (*(volatile uint64_t*)(CLINT_BASE + 0x4000))
+#define MTIMECMP(hartid) (*(volatile uint64_t*)(CLINT_BASE + 0x4000 + 8 * hartid))
 
-#define read_csr(csr) ({ \
-    unsigned long __v; \
-    __asm__ volatile ("csrr %0, " #csr : "=r"(__v)); \
-    __v; \
-})
-
-#define write_csr(csr, val) ({ \
-    __asm__ volatile ("csrw " #csr ", %0" :: "r"(val)); \
-})
+// PLIC
+#define PLIC_PRIORITY(id) (PLIC_BASE + (id) * 4)
+#define PLIC_PENDING(id) (PLIC_BASE + 0x1000 + ((id) / 32) * 4)
+#define PLIC_MENABLE(hart, id) (PLIC_BASE + 0x2000 + (hart) * 0x80 + ((id) / 32) * 4)
+#define PLIC_MTHRESHOLD(hart) (PLIC_BASE + 0x200000 + (hart) * 0x1000)
+#define PLIC_MCLAIM(hart) (PLIC_BASE + 0x200004 + (hart) * 0x1000)
+#define PLIC_MCOMPLETE(hart) (PLIC_BASE + 0x200004 + (hart) * 0x1000)
 
 #endif /* __PLATFORM_H__ */

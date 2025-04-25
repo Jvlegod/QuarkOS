@@ -24,10 +24,12 @@
 #define uart_read_reg(reg) (*(UART_REG(reg)))
 #define uart_write_reg(reg, v) (*(UART_REG(reg)) = (v))
 
-#define PRINT_BUF_SIZE 32
+#define PRINT_BUF_SIZE 65
 
 // NS16550A
 void uart_init();
-void uart_printf(const char *fmt, ...);
+int uart_getc();
+void uart_putc(char ch);
+void uart_puts(char *s);
 
 #endif /* __UART_H__ */

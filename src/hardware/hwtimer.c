@@ -12,9 +12,6 @@ void timer_init() {
 }
 
 void handle_timer_interrupt() {
-    static int d = 0;
-    kprintf("\n----- ticks %d -----\n", d);
-    d ++;
     timer_load(TIMER_INTERVAL);
     schedule();
 }

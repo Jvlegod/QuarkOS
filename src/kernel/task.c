@@ -9,7 +9,7 @@ static int current_task = 0;
 static int task_count = MAXNUM_CPU;
 
 extern void trap_entry(void);
-extern void start_switch_to(struct context *old);
+extern void ctx_int_switch(struct context *new);
 extern void main();
 
 static inline uint64_t* get_kernel_stack(int hartid) {
@@ -31,16 +31,9 @@ static inline uint64_t* get_user_stack(int task_id) {
         USER_STACK_SIZE - 16);
 }
 
-void task2() {
-    for (;;) {
-        kprintf("awsdasdsadsaddsa\r\n");
-    }
-}
-
 // idle task
 static void idle_task() {
     task_create(main, 9);
-    task_create(task2, 10);
 
     while(1) {
         __asm__ volatile ("wfi");
@@ -69,7 +62,7 @@ void task_init(int hartid) {
     init_idle_task(hartid);
     
     write_csr(mtvec, (uint64_t)trap_entry);
-    start_switch_to(&tasks[hartid].ctx);
+    ctx_int_switch(&tasks[hartid].ctx);
 }
 
 void task_create(void (*entry)(void), int task_id) {

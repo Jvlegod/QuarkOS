@@ -99,7 +99,7 @@ clean:
 	rm -rf build
 
 run: all
-	qemu-system-riscv64 -bios none -machine virt -kernel $(KERNEL_ELF) -nographic
+	qemu-system-riscv64 -bios none -machine virt -kernel $(KERNEL_ELF) -nographic -serial mon:stdio
 
 DEPFILES := $(OBJS:.o=.d)
 -include $(DEPFILES)

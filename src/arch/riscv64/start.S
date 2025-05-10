@@ -31,29 +31,3 @@ park_hart:
     j       park_hart
 
 .extern start_kernel
-
-/* only call on the fist, just switch to the idle task */
-.global start_switch_to
-.align 4
-start_switch_to:
-        ld ra, 0 * 8(a0)
-        ld sp, 1 * 8(a0)
-        ld s0, 17 * 8(a0)
-        ld s1, 18 * 8(a0)
-        ld s2, 19 * 8(a0)
-        ld s3, 20 * 8(a0)
-        ld s4, 21 * 8(a0)
-        ld s5, 22 * 8(a0)
-        ld s6, 23 * 8(a0)
-        ld s7, 24 * 8(a0)
-        ld s8, 25 * 8(a0)
-        ld s9, 26 * 8(a0)
-        ld s10, 27 * 8(a0)
-        ld s11, 28 * 8(a0)
-
-        ld t0, 31 * 8(a0)
-        csrw mstatus, t0
-        ld t0, 32 * 8(a0)
-        csrw mepc, t0
-        
-        mret

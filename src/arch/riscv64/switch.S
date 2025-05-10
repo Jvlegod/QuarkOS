@@ -4,9 +4,8 @@
 .align 4
 # M mode
 trap_entry:
-    addi sp, sp, -31 * 8
+    addi sp, sp, -31 * 8 # now sp pointer to kernel stack
     sd ra,  0 * 8(sp)  # x1
-    sd sp,  1 * 8(sp)  # x2
     sd t0,  2 * 8(sp)  # x5
     sd t1,  3 * 8(sp)  # x6
     sd t2,  4 * 8(sp)  # x7
@@ -36,13 +35,14 @@ trap_entry:
     sd s11,28 * 8(sp)  # x27
     sd gp, 29 * 8(sp)  # x3
     sd tp, 30 * 8(sp)  # x4
+    sd sp,  1 * 8(sp)  # x2
+    csrw mscratch, sp
 
     mv a0, sp          # arg1：struct context pointer
     call handler_trap  # TODO: here we will change to handler_trap
 
+    csrr sp, mscratch
     ld ra,  0 * 8(sp)
-    // sp
-    ld sp,  1 * 8(sp)
     ld t0,  2 * 8(sp)
     ld t1,  3 * 8(sp)
     ld t2,  4 * 8(sp)
@@ -73,7 +73,7 @@ trap_entry:
     ld gp, 29 * 8(sp)
     ld tp, 30 * 8(sp)
     
-    addi sp, sp, 31 * 8
+    ld sp,  1 * 8(sp) # addi sp, sp, 31 * 8
     
     mret
 
@@ -101,7 +101,9 @@ ctx_switch:
         sd s11, 28 * 8(a0)
         
         csrr t0, mstatus
-        sd t0, 31 *8(a0)
+        sd t0, 31 * 8(a0)
+        csrr t0, mepc
+        sd t0, 32 * 8(a0)
 
         ld ra, 0 * 8(a1)
         ld sp, 1 * 8(a1)
@@ -118,7 +120,37 @@ ctx_switch:
         ld s10, 27 * 8(a1)
         ld s11, 28 * 8(a1)
 
-        ld t0, 31 *8(a1)
+        ld t0, 31 * 8(a1)
         csrw mstatus, t0
+        ld t0, 32 * 8(a1)
+        csrw mepc, t0
         
-        ret
+        mret
+
+# ctx_int_switch can only occur in interrupt
+.global ctx_int_switch
+.align 4
+ctx_int_switch:
+        csrw mscratch, a0
+
+        ld ra, 0 * 8(a0)
+        ld sp, 1 * 8(a0)
+        ld s0, 17 * 8(a0)
+        ld s1, 18 * 8(a0)
+        ld s2, 19 * 8(a0)
+        ld s3, 20 * 8(a0)
+        ld s4, 21 * 8(a0)
+        ld s5, 22 * 8(a0)
+        ld s6, 23 * 8(a0)
+        ld s7, 24 * 8(a0)
+        ld s8, 25 * 8(a0)
+        ld s9, 26 * 8(a0)
+        ld s10, 27 * 8(a0)
+        ld s11, 28 * 8(a0)
+
+        ld t0, 31 * 8(a0)
+        csrw mstatus, t0
+        ld t0, 32 * 8(a0)
+        csrw mepc, t0
+        
+        mret

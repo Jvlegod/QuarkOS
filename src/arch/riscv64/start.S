@@ -19,6 +19,12 @@ _start:
     mul     a4, a0, a2 /* kernel hart stack offset：hartid * STACK_SIZE */
     add     sp, a1, a4
 
+    /* for qemu */
+    li      t0, 0xffffffff
+	csrw    pmpaddr0, t0
+	li      t0, 0xf
+	csrw    pmpcfg0, t0
+
     tail    start_kernel
 park_hart:
     wfi

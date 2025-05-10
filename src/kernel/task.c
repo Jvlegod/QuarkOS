@@ -31,15 +31,21 @@ static inline uint64_t* get_user_stack(int task_id) {
         USER_STACK_SIZE - 16);
 }
 
+void task2() {
+    for (;;) {
+        kprintf("awsdasdsadsaddsa\r\n");
+    }
+}
+
 // idle task
 static void idle_task() {
     task_create(main, 9);
+    task_create(task2, 10);
 
     while(1) {
         __asm__ volatile ("wfi");
     }
 }
-
 static void init_idle_task(int hartid) {
     struct task *idle = &tasks[hartid];
     
@@ -47,8 +53,11 @@ static void init_idle_task(int hartid) {
     
     idle->ctx.ra = (uint64_t)idle_task;
     idle->ctx.sp = (uint64_t)sp;
-    idle->ctx.mstatus = 0x1888;
-    idle->ctx.mepc = (uint64_t)idle_task;
+    // MIE = 0
+    // MPIE = 1
+    // MPP = 3 (Machine mode)
+    idle->ctx.mstatus = 0x1880;
+    idle->ctx.mepc = (uint64_t)idle_task ;
 }
 
 void task_init(int hartid) {
@@ -74,13 +83,34 @@ void task_create(void (*entry)(void), int task_id) {
 
     t->ctx.ra = (uint64_t)entry;
     t->ctx.sp = (uint64_t)sp; // stack frame pointer
-    t->ctx.mstatus = 0x0008; // MIE=0, MPP=00 (User mode)
+    t->ctx.mstatus = 0x0080; // MPP=00 (User mode)
+    t->ctx.mepc = (uint64_t)entry;
 }
 
 void schedule() {
-    task_yield();
+    // task_yield(); // here we can change proactive
+    task_int_yield();
 }
 
+void task_int_yield() {
+    struct context *new = NULL;
+    
+    for (int i = current_task; i < task_count; i ++) {
+        current_task = (i + 1) % task_count;
+        if (tasks[current_task].status == TASK_UNCREATE) {
+            continue;
+        }
+        break;
+    }
+
+    new = &tasks[current_task].ctx;
+    
+    __asm__ volatile (
+        "mv a0, %0\n"
+        "jal ctx_int_switch"
+        :: "r"(new)
+    );   
+}
 void task_yield() {
     struct context *old = &tasks[current_task].ctx;
     struct context *new = NULL;

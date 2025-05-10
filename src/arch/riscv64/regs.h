@@ -25,4 +25,16 @@ static inline void intr_off() {
     __value; \
 })
 
+static inline uint64_t atomic_load_u64(const volatile uint64_t *ptr) {
+    uint64_t val;
+    __asm__ volatile (
+        "ld %0, %1\n"
+        "fence ir, ir"
+        : "=r" (val)
+        : "A" (*ptr)
+        : "memory"
+    );
+    return val;
+}
+
 #endif /* __REGS_H__ */

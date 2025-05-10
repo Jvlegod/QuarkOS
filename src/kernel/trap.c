@@ -5,18 +5,21 @@
 #include "hwtimer.h"
 #include "kprintf.h"
 
+/*
+ * a7: syscall number
+ * a0~a6: parameters
+ */
 static void handle_syscall() {
     while(1) {
-
     }
 }
 
 static void handle_illegal_instruction() {
     while(1) {
-
     }
 }
-static void handle_interrupt(uint64_t cause, uint64_t epc) {
+
+static uint64_t handle_interrupt(uint64_t cause, uint64_t epc) {
     switch (cause) {
         case MCAUSE_MACHINE_TIMER_INT:
             handle_timer_interrupt();
@@ -28,25 +31,27 @@ static void handle_interrupt(uint64_t cause, uint64_t epc) {
             kprintf("Unhandled interrupt: cause=%lx\n", cause);
             while(1);
     }
+    return epc;
 }
-static void handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval) {
+static uint64_t handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval) {
     switch (cause) {
         case MCAUSE_ECALL_U_MODE:
             uint64_t ext_id = 0; // TODO?
             uint64_t func_id = 0; // TODO?
             handle_syscall(ext_id, func_id);
+            epc += 4;
             break;
             
         case MCAUSE_ILLEGAL_INSTR:
             kprintf("Illegal instruction at 0x%lx: 0x%lx\n", epc, mtval);
             handle_illegal_instruction();
             break;
-            
         default:
             kprintf("Unhandled exception: cause=%lx\n", cause);
             while(1);
             break;
     }
+    return epc;
 }
 
 // Do we really need all ctx?
@@ -59,9 +64,9 @@ void handler_trap(struct context *ctx) {
 
     // type of interrupt
     if (MCAUSE_IS_INTERRUPT(cause)) {
-        handle_interrupt(cause, epc);
+        epc = handle_interrupt(cause, epc);
     } else {
-        handle_exception(cause, epc, mtval);
+        epc = handle_exception(cause, epc, mtval);
     }
 
     write_csr(mepc, epc);

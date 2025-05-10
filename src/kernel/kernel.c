@@ -5,6 +5,7 @@
 #include "test.h"
 #include "hwtimer.h"
 #include "interrupt.h"
+#include "lock.h"
 void start_kernel(void)
 {
 	uart_init();

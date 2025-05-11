@@ -1,6 +1,7 @@
 #include "kprintf.h"
 #include "ktypes.h"
+#include "shell.h"
 
 void main(void *arg) {
-    while(1);
+    shell_main();
 }

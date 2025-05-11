@@ -64,9 +64,10 @@ struct task {
 };
 
 void task_init(int hart_id);
-void task_create(void (*entry)(void), int task_id, void *arg);
+void task_create(void (*entry)(void*), void *arg);
 void task_int_yield();
 void task_yield();
 void schedule();
+void task_exit();
 
 #endif /* __TASK_H__ */

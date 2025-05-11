@@ -1,6 +1,6 @@
 #ifndef __UART_H__
 #define __UART_H__
-
+#include "ktypes.h"
 // http://byterunner.com/16550.html
 
 #define UART_REG(reg) ((volatile uint8_t *)(UART0 + reg))
@@ -25,14 +25,24 @@
 #define uart_write_reg(reg, v) (*(UART_REG(reg)) = (v))
 
 #define PRINT_BUF_SIZE 65
+#define RING_BUF_SIZE 256
+
+struct uart_buf {
+	char rx_buf[RING_BUF_SIZE];
+	uint16_t rx_head;
+	uint16_t rx_tail;
+};
+
+static struct uart_buf uart_rx_buf;
 
 // NS16550A
 void uart_init();
 int uart_getc();
 void uart_putc(char ch);
 void uart_puts(char *s);
-short uart_write_bulk(char *data, unsigned short len);
-short uart_read_async(char *data, unsigned short len);
 void uart_isr();
+
+int shell_uart_fflush(char *buf);
+bool shell_if_fflush();
 
 #endif /* __UART_H__ */

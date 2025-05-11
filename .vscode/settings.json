@@ -10,6 +10,11 @@
         "platform.h": "c",
         "interrupt.h": "c",
         "printf.h": "c",
-        "kprintf.h": "c"
+        "kprintf.h": "c",
+        "stdio.h": "c",
+        "string.h": "c",
+        "shell_port.h": "c",
+        "shell.h": "c",
+        "cstdlib.h": "c"
     }
 }

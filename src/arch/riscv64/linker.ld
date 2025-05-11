@@ -70,5 +70,11 @@ SECTIONS {
         PROVIDE(_user_stack_top = .);
     } > RAM
 
+    .shell_commands : {
+        _shell_command_start = .;
+        KEEP(*(.shell_commands))
+        _shell_command_end = .;
+    }
+
     _end = .;
 }

@@ -1,11 +1,8 @@
 #include "ktypes.h"
 #include "platform.h"
 #include "uart.h"
+#include "cstdlib.h"
 #include <stdarg.h> // impl by compiler
-
-#define RING_BUF_SIZE 256
-static volatile char rx_buf[RING_BUF_SIZE];
-static volatile uint16_t rx_head = 0, rx_tail = 0;
 
 void uart_init()
 {
@@ -20,6 +17,10 @@ void uart_init()
 	lcr = 0;
 	uart_write_reg(LCR, lcr | (3 << 0));
     uart_write_reg(IER, uart_read_reg(IER) | (1 << 0));
+
+	uart_rx_buf.rx_tail = 0;
+	uart_rx_buf.rx_head = 0;
+	memset(uart_rx_buf.rx_buf, 0, sizeof(RING_BUF_SIZE));
 }
 void uart_putc(char ch) {
     while ((uart_read_reg(LSR) & LSR_TX_IDLE) == 0);
@@ -42,28 +43,31 @@ void uart_puts(char *s) {
 
 void uart_isr() {
     while (uart_read_reg(LSR) & LSR_RX_READY) {
-        rx_buf[rx_head++] = uart_read_reg(RHR);
-        rx_head %= RING_BUF_SIZE;
+        uart_rx_buf.rx_buf[uart_rx_buf.rx_head] = uart_read_reg(RHR);
+		uart_putc(uart_rx_buf.rx_buf[uart_rx_buf.rx_head]);
+		uart_rx_buf.rx_head++;
+        uart_rx_buf.rx_head %= RING_BUF_SIZE;
     }
 }
 
-short uart_write_bulk(char *data, unsigned short len) {
-    if (!data || len == 0) return 0;
-    
-    unsigned short sent = 0;
-    while (sent < len) {
-        if (uart_read_reg(LSR) & LSR_TX_IDLE) {
-            uart_write_reg(THR, data[sent++]);
+bool shell_if_fflush() {
+    int i = uart_rx_buf.rx_tail;
+    char *buf = uart_rx_buf.rx_buf;
+    while (i != uart_rx_buf.rx_head) {
+        if (buf[i] == '\r' || buf[i] == '\n') {
+            return true;
         }
+        i = (i + 1) % RING_BUF_SIZE;
     }
-    return sent;
+    return false;
 }
-
-short uart_read_async(char *data, unsigned short len) {
-    short count = 0;
-    while (count < len && rx_tail != rx_head) {
-        data[count++] = rx_buf[rx_tail++];
-        rx_tail %= RING_BUF_SIZE;
-    }
-    return count;
+int shell_uart_fflush(char *buf) {
+	int i = 0;
+	while (!shell_if_fflush());
+	uart_putc('\n');
+	while (uart_rx_buf.rx_head != uart_rx_buf.rx_tail) {
+		buf[i++] = uart_rx_buf.rx_buf[uart_rx_buf.rx_tail]; // TODO: buf may out of range
+		uart_rx_buf.rx_buf[uart_rx_buf.rx_tail] = 0;
+		uart_rx_buf.rx_tail = (uart_rx_buf.rx_tail + 1) % RING_BUF_SIZE;
+	}
 }

@@ -1,5 +1,7 @@
 #include "plic.h"
 #include "kprintf.h"
+#include "shell.h"
+
 static inline int plic_claim() {
     int irq = *(uint32_t*)PLIC_MCLAIM(read_tp());
     return irq;
@@ -21,8 +23,7 @@ void plic_init() {
 void handler_plic() {
     int irq = plic_claim();
     if (irq == UART0_IRQ) {
-        char c = uart_getc();
-        kprintf("%c", c);
+        uart_isr();
     } else if (irq) {
 		kprintf("unexpected interrupt irq = %d\r\n", irq);
 	}

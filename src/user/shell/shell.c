@@ -30,7 +30,7 @@ int cmd_start(int argc, char **argv) {
     struct shell_app *app;
     for (app = app_table; app->name != NULL; app++) {
         if (strcmp(argv[1], app->name) == 0) {
-            task_create(app->entry, (void*)argv);
+            app->entry((void*)argv);
             return 0;
         }
     }

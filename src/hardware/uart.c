@@ -43,10 +43,28 @@ void uart_puts(char *s) {
 
 void uart_isr() {
     while (uart_read_reg(LSR) & LSR_RX_READY) {
-        uart_rx_buf.rx_buf[uart_rx_buf.rx_head] = uart_read_reg(RHR);
-		uart_putc(uart_rx_buf.rx_buf[uart_rx_buf.rx_head]);
-		uart_rx_buf.rx_head++;
-        uart_rx_buf.rx_head %= RING_BUF_SIZE;
+        char c = uart_read_reg(RHR);
+        bool is_backspace = (c == 0x08 || c == 0x7F);
+
+        if (is_backspace) {
+            if (uart_rx_buf.rx_head != uart_rx_buf.rx_tail) {
+                uart_rx_buf.rx_head = (uart_rx_buf.rx_head - 1 + RING_BUF_SIZE) % RING_BUF_SIZE;
+                uart_putc('\x08');
+                uart_putc(' ');
+                uart_putc('\x08');
+            } else {
+                uart_putc('\a');
+            }
+        } else {
+            uint16_t next_head = (uart_rx_buf.rx_head + 1) % RING_BUF_SIZE;
+            if (next_head != uart_rx_buf.rx_tail) {
+                uart_rx_buf.rx_buf[uart_rx_buf.rx_head] = c;
+                uart_rx_buf.rx_head = next_head;
+                uart_putc(c);
+            } else {
+                uart_putc('\a');
+            }
+        }
     }
 }
 

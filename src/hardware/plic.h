@@ -2,7 +2,7 @@
 #define __PLIC_H__
 #include "platform.h"
 
-#define UART0_IRQ 0
+#define UART0_IRQ 10
 
 #define MIE_MEIE (1 << 11) // external
 #define MIE_MTIE (1 << 7)  // timer

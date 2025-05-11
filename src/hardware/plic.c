@@ -21,8 +21,11 @@ void plic_init() {
 void handler_plic() {
     int irq = plic_claim();
     if (irq == UART0_IRQ) {
-
-    }
+        char c = uart_getc();
+        kprintf("%c", c);
+    } else if (irq) {
+		kprintf("unexpected interrupt irq = %d\r\n", irq);
+	}
 
     if (irq) {
         plic_complete(irq);

@@ -84,8 +84,8 @@ trap_entry:
     sd t0, 32 * 8(t1)
     csrw mscratch, t1
 
-    csrr a0, mscratch          # arg1：struct context pointer
-    call handler_trap  # TODO: here we will change to handler_trap
+    csrr a0, mscratch  # arg1：struct context pointer
+    call handler_trap
 
     csrr tp, mscratch
     reg_restore tp

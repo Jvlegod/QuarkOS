@@ -81,10 +81,14 @@ int cmd_clear(int argc, char **argv) {
 }
 
 void shell_main(void) {
-    uart_puts("\r\nMyOS Shell v0.1\r\n");
+    uart_puts("\r\nQuarkOS Shell v0.1\r\n");
     
     while (1) {
         // uart_puts("sh> ");
+        // uart_puts("\r\n");
+        // char c = uart_getc();
+        // uart_putc(c);
+        // uart_puts("\r\n");
         // read_line();
         // parse_command();
         

@@ -28,7 +28,7 @@ static uint64_t handle_interrupt(uint64_t cause, uint64_t epc) {
             handler_external_interrupt();
             break;
         default:
-            kprintf("Unhandled interrupt: cause=%lx\n", cause);
+            kprintf("Unhandled interrupt: cause=%lx\r\n", cause);
             while(1);
     }
     return epc;
@@ -43,11 +43,11 @@ static uint64_t handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval) {
             break;
             
         case MCAUSE_ILLEGAL_INSTR:
-            kprintf("Illegal instruction at 0x%lx: 0x%lx\n", epc, mtval);
+            kprintf("Illegal instruction at 0x%lx: 0x%lx\r\n", epc, mtval);
             handle_illegal_instruction();
             break;
         default:
-            kprintf("Unhandled exception: cause=%lx\n", cause);
+            kprintf("Unhandled exception: cause=%lx\r\n", cause);
             while(1);
             break;
     }

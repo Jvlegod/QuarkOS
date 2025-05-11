@@ -15,7 +15,7 @@ void uart_init()
 
 	lcr = 0;
 	uart_write_reg(LCR, lcr | (3 << 0));
-    // uart_write_reg(IER, uart_read_reg(IER) | (1 << 0));
+    uart_write_reg(IER, uart_read_reg(IER) | (1 << 0));
 }
 void uart_putc(char ch) {
     while ((uart_read_reg(LSR) & LSR_TX_IDLE) == 0);

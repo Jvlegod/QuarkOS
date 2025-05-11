@@ -17,7 +17,7 @@
 
 #define UART0 0x10000000L
 #define CLINT_BASE 0x2000000L
-#define PLIC_BASE 0x0c000000L
+#define PLIC_BASE 0x0C000000L
 
 // CLINT
 #define MTIME (*(volatile uint64_t*)(CLINT_BASE + 0xBFF8))

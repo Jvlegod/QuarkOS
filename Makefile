@@ -99,13 +99,12 @@ clean:
 	rm -rf build
 
 run: all
-	qemu-system-riscv64 -bios none \
+	/usr/bin/qemu-system-riscv64 -bios none \
 	-machine virt \
-	-nographic \
 	-smp 1 \
 	-device virtio-keyboard-device \
 	-kernel $(KERNEL_ELF) \
-	-serial mon:stdio \
+	-serial vc \
 
 DEPFILES := $(OBJS:.o=.d)
 -include $(DEPFILES)

@@ -23,6 +23,6 @@ void task_test() {
 void uart_test() {
     int a = 1;
     int b = -23;
-    TEST_PRINTF("Hello, QuarkOS!\n");
-    TEST_PRINTF("Hello, QuarkOS! %d %d\n", a, b);
+    TEST_PRINTF("Hello, QuarkOS!\r\n");
+    TEST_PRINTF("Hello, QuarkOS! %d %d\r\n", a, b);
 }

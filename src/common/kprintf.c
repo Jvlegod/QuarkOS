@@ -39,6 +39,9 @@ void kprintf(const char *fmt, ...) {
             if (c == '\r') {
                 uart_putc('\n');
             }
+            if (c == '\n') {
+                uart_putc('\r');
+            }
             uart_putc(c);
             continue;
         }
@@ -77,6 +80,9 @@ void kprintf(const char *fmt, ...) {
                 if (c == '\r') {
                     uart_putc('\n');
                 }
+                if (c == '\n') {
+                    uart_putc('\r');
+                }
                 uart_putc(c);
                 break;
             }
@@ -86,6 +92,9 @@ void kprintf(const char *fmt, ...) {
                 for (char *p = str; *p; p++) {
                     if (*p == '\r') {
                         uart_putc('\n');
+                    }
+                    if (*p == '\n') {
+                        uart_putc('\r');
                     }
                     uart_putc(*p);
                 }

@@ -33,7 +33,7 @@ static inline uint64_t* get_user_stack(int task_id) {
 
 // idle task
 static void idle_task() {
-    task_create(main, 9);
+    task_create(main, 9, (void *)NULL);
 
     while(1) {
         __asm__ volatile ("wfi");
@@ -65,7 +65,7 @@ void task_init(int hartid) {
     ctx_int_switch(&tasks[hartid].ctx);
 }
 
-void task_create(void (*entry)(void), int task_id) {
+void task_create(void (*entry)(void), int task_id, void *arg) {
     if(task_count >= MAX_TASKS) return;
 
     struct task *t = &tasks[task_count++];
@@ -74,6 +74,7 @@ void task_create(void (*entry)(void), int task_id) {
 
     uint64_t *sp = get_user_stack(task_id);
 
+    t->ctx.a0 = (uint64_t)arg;
     t->ctx.ra = (uint64_t)entry;
     t->ctx.sp = (uint64_t)sp; // stack frame pointer
     t->ctx.mstatus = 0x0080; // MPP=00 (User mode)

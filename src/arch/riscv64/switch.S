@@ -133,8 +133,8 @@ ctx_int_switch:
         csrw mstatus, t0
         ld t0, 32 * 8(a0)
         csrw mepc, t0
-        
-        # ld a0,  5 * 8(a0)  # x10
+
+        ld a0,  5 * 8(a0)  # x10
         
         mret
 

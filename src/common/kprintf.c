@@ -35,11 +35,15 @@ void kprintf(const char *fmt, ...) {
 
     for (; *fmt; fmt++) {
         if (*fmt != '%') {
-            uart_putc(*fmt);
+            char c = *fmt;
+            if (c == '\r') {
+                uart_putc('\n');
+            }
+            uart_putc(c);
             continue;
         }
 
-        fmt++;  // skip '%'
+        fmt++;
         switch (*fmt) {
             case 'd': {
                 int num = va_arg(args, int);
@@ -50,10 +54,10 @@ void kprintf(const char *fmt, ...) {
                 print_num(num, 10);
                 break;
             }
-            case 'u': 
+            case 'u':
                 print_num(va_arg(args, unsigned int), 10);
                 break;
-            case 'l':
+            case 'l': {
                 fmt++;
                 unsigned long num = va_arg(args, unsigned long);
                 if (*fmt == 'u') {
@@ -64,15 +68,27 @@ void kprintf(const char *fmt, ...) {
                     uart_puts("%l?");
                 }
                 break;
+            }
             case 'x':
                 print_num(va_arg(args, unsigned int), 16);
                 break;
-            case 'c':
-                uart_putc((char)va_arg(args, int));
+            case 'c': {
+                char c = (char)va_arg(args, int);
+                if (c == '\r') {
+                    uart_putc('\n');
+                }
+                uart_putc(c);
                 break;
+            }
             case 's': {
                 char *str = va_arg(args, char*);
-                uart_puts(str ? str : "(null)");
+                if (!str) str = "(null)";
+                for (char *p = str; *p; p++) {
+                    if (*p == '\r') {
+                        uart_putc('\n');
+                    }
+                    uart_putc(*p);
+                }
                 break;
             }
             case '%':

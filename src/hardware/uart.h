@@ -31,5 +31,8 @@ void uart_init();
 int uart_getc();
 void uart_putc(char ch);
 void uart_puts(char *s);
+short uart_write_bulk(char *data, unsigned short len);
+short uart_read_async(char *data, unsigned short len);
+void uart_isr();
 
 #endif /* __UART_H__ */

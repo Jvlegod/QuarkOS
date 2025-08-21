@@ -36,12 +36,8 @@ void kprintf(const char *fmt, ...) {
     for (; *fmt; fmt++) {
         if (*fmt != '%') {
             char c = *fmt;
-            if (c == '\r') {
-                uart_putc('\n');
-            }
-            if (c == '\n') {
-                uart_putc('\r');
-            }
+            if (c == '\r') uart_putc('\n');
+            if (c == '\n') uart_putc('\r');
             uart_putc(c);
             continue;
         }
@@ -75,14 +71,18 @@ void kprintf(const char *fmt, ...) {
             case 'x':
                 print_num(va_arg(args, unsigned int), 16);
                 break;
+            case 'p': {
+                void *ptr = va_arg(args, void *);
+                uintptr_t addr = (uintptr_t)ptr;
+                uart_putc('0');
+                uart_putc('x');
+                print_num_long(addr, 16);
+                break;
+            }
             case 'c': {
                 char c = (char)va_arg(args, int);
-                if (c == '\r') {
-                    uart_putc('\n');
-                }
-                if (c == '\n') {
-                    uart_putc('\r');
-                }
+                if (c == '\r') uart_putc('\n');
+                if (c == '\n') uart_putc('\r');
                 uart_putc(c);
                 break;
             }
@@ -90,12 +90,8 @@ void kprintf(const char *fmt, ...) {
                 char *str = va_arg(args, char*);
                 if (!str) str = "(null)";
                 for (char *p = str; *p; p++) {
-                    if (*p == '\r') {
-                        uart_putc('\n');
-                    }
-                    if (*p == '\n') {
-                        uart_putc('\r');
-                    }
+                    if (*p == '\r') uart_putc('\n');
+                    if (*p == '\n') uart_putc('\r');
                     uart_putc(*p);
                 }
                 break;

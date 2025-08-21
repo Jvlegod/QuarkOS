@@ -25,6 +25,11 @@ static inline void intr_off() {
     __value; \
 })
 
+static inline void barrier(void) {
+    __asm__ volatile("fence" ::: "memory");
+}
+
+
 static inline uint64_t atomic_load_u64(const volatile uint64_t *ptr) {
     uint64_t val;
     __asm__ volatile (

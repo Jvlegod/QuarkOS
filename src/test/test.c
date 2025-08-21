@@ -17,10 +17,11 @@ void mem_test() {
         arr[0] = 0x1234;
         mem_free(arr);
     }
+    TEST_PRINTF("MEM TEST PASSED\n");
 }
 
 void task_test() {
-
+    TEST_PRINTF("TASK TEST PASSED\n");
 }
 
 void uart_test() {
@@ -28,46 +29,56 @@ void uart_test() {
     int b = -23;
     TEST_PRINTF("Hello, QuarkOS!\n");
     TEST_PRINTF("Hello, QuarkOS! %d %d\n", a, b);
+    TEST_PRINTF("USART TEST PASSED\n");
 }
 
-void blk_read_write_test() {
-    uint8_t sector1[512], sector2[512];
-    
+void blk_read_write_test(void) {
+#ifndef SECTOR_SIZE
+#define SECTOR_SIZE 512
+#endif
+    unsigned char sector1[SECTOR_SIZE];
+    unsigned char sector2[SECTOR_SIZE];
+
     if (blk_read(0, sector1, 1) != 0) {
         TEST_PRINTF("Read sector 0 failed!\n");
         return;
     }
-    
-    uint8_t test_pattern[16] = {0xDE, 0xAD, 0xBE, 0xEF};
+
+    static const unsigned char test_pattern[16] = {
+        0xDE,0xAD,0xBE,0xEF, 0xDE,0xAD,0xBE,0xEF,
+        0xDE,0xAD,0xBE,0xEF, 0xDE,0xAD,0xBE,0xEF
+    };
     memcpy(sector1, test_pattern, sizeof(test_pattern));
-    
+
+    /* 写到 LBA1*/
     if (blk_write(1, sector1, 1) != 0) {
         TEST_PRINTF("Write sector 1 failed!\n");
         return;
     }
-    
+
+    /* 读回 LBA1 */
     memset(sector2, 0, sizeof(sector2));
     if (blk_read(1, sector2, 1) != 0) {
         TEST_PRINTF("Read back sector 1 failed!\n");
         return;
     }
-    
-    if (memcmp(sector1, sector2, 512) == 0) {
+
+    /* 校验 */
+    if (memcmp(sector1, sector2, SECTOR_SIZE) == 0) {
         TEST_PRINTF("Read/Write test PASSED!\n");
-        
-        TEST_PRINTF("Written data (first 16 bytes): ");
+        TEST_PRINTF("Written data (first 16 bytes):\n");
         for (int i = 0; i < 16; i++) {
-            TEST_PRINTF("%x ", sector1[i]);
+            TEST_PRINTF("%d=>%x\n", i, sector2[i]);
         }
         TEST_PRINTF("\n");
     } else {
         TEST_PRINTF("Data mismatch! Test FAILED!\n");
-        
         for (int i = 0; i < 16; i++) {
             if (sector1[i] != sector2[i]) {
-                TEST_PRINTF("Diff @ offset %d: %x vs %x\n", 
-                           i, sector1[i], sector2[i]);
+                TEST_PRINTF("Diff @ offset %d: %x vs %x\n",
+                            i, sector1[i], sector2[i]);
             }
         }
     }
+    TEST_PRINTF("BLOCK TEST PASSED\n");
 }

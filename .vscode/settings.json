@@ -15,6 +15,9 @@
         "string.h": "c",
         "shell_port.h": "c",
         "shell.h": "c",
-        "cstdlib.h": "c"
+        "cstdlib.h": "c",
+        "initializer_list": "c",
+        "utility": "c",
+        "compare": "c"
     }
 }

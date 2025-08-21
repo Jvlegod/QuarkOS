@@ -27,7 +27,7 @@ endif
 
 # optimals
 ifeq ($(BUILD_TYPE),debug)
-    CFLAGS += -O0 -ggdb3
+    CFLAGS += -O2 -ggdb3
     LDFLAGS += -nostdlib
 else ifeq ($(BUILD_TYPE),release)
     CFLAGS += -O2 -DNDEBUG
@@ -101,10 +101,13 @@ clean:
 run: all
 	/usr/bin/qemu-system-riscv64 -bios none \
 	-machine virt \
+	-m 256M \
 	-smp 1 \
+	-drive id=hd0,file=disk.img,if=none,format=raw \
+	-device virtio-blk-device,drive=hd0,bus=virtio-mmio-bus.0 \
 	-device virtio-keyboard-device \
 	-kernel $(KERNEL_ELF) \
-	-serial vc \
+	-monitor stdio \
 
 DEPFILES := $(OBJS:.o=.d)
 -include $(DEPFILES)

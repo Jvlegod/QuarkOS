@@ -6,7 +6,7 @@
 #include "kprintf.h"
 #include "ktypes.h"
 #include "virtio_blk.h"
-#include "virtio_gpu.h"
+#include "gfx.h" /* #include "virtio_gpu.h" */
 #include "cstdlib.h"
 #include "fs.h"
 
@@ -94,5 +94,14 @@ void fs_test() {
 }
 
 void gpu_test() {
-    virtio_gpu_present_demo();
+    // virtio_gpu_present_demo();
+
+    gfx_clear(GFX_BGRA(0x30,0x30,0x60));
+    gfx_fill_rect(0,0,gfx_width(),28, GFX_BGRA(0x30,0x90,0xF0));
+    gfx_fill_rect(40,60,260,160, GFX_BGRA(0x20,0x80,0xF0));
+    gfx_fill_rect(120,120,260,180, GFX_BGRA(0xF0,0x80,0x30));
+    gfx_fill_rect(gfx_width()-200,80,160,140, GFX_BGRA(0x30,0xF0,0x90));
+    gfx_present(NULL);
+
+    TEST_PRINTF("GPU/UI TEST PASSED\n");
 }

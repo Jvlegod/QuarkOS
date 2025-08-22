@@ -77,6 +77,8 @@
         "iomanip": "c",
         "span": "c",
         "semaphore": "c",
-        "ios": "c"
+        "ios": "c",
+        "core": "c",
+        "gfx.h": "c"
     }
 }

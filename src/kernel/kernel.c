@@ -7,7 +7,7 @@
 #include "interrupt.h"
 #include "lock.h"
 #include "virtio_blk.h"
-#include "virtio_gpu.h"
+#include "gfx.h" /* #include "virtio_gpu.h" */
 #include "fs.h"
 
 void start_kernel(void)
@@ -29,8 +29,8 @@ void start_kernel(void)
         while (1);
     }
 	fs_test();
-    if (virtio_gpu_init() != 0) {
-		kprintf("[BOOT] virtio gpu init failed!\r\n");
+    if (gfx_init() != 0) {
+		kprintf("[BOOT] gfx(virtio gpu) init failed!\r\n");
         while (1);
     }
 	gpu_test();

@@ -27,6 +27,7 @@ static struct shell_command cmd_table[] = {
     {"pwd",    cmd_pwd,    "show current path"},
     {"ed",     cmd_ed,     "Quark editor"},
     {"rm",     cmd_rm,     "remove file/dir"},
+    {"clear",  cmd_clear,  "clear the screen"},
     {NULL, NULL, NULL}
 };
 
@@ -45,6 +46,10 @@ int cmd_rm(int argc, char** argv) {
         return -1;
     }
 
+    return 0;
+}
+int cmd_clear(int argc, char** argv) {
+    uart_clear();
     return 0;
 }
 

@@ -40,6 +40,7 @@ int uart_getc();
 void uart_putc(char ch);
 void uart_puts(char *s);
 void uart_isr();
+void uart_clear();
 
 bool shell_uart_fflush(char *buf);
 bool shell_if_fflush();

@@ -115,3 +115,7 @@ int editor_uart_fflush(char *buf) {
 	}
     return i;
 }
+
+void uart_clear() {
+    uart_puts("\033[2J\033[H");
+}

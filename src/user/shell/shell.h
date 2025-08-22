@@ -38,5 +38,6 @@ int cmd_cd(int argc, char** argv);
 int cmd_pwd(int argc, char** argv);
 int cmd_ed(int argc, char** argv);
 int cmd_rm(int argc, char** argv);
+int cmd_clear(int argc, char** argv);
 
 #endif

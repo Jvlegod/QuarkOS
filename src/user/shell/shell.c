@@ -25,9 +25,28 @@ static struct shell_command cmd_table[] = {
     {"touch",  cmd_touch,  "create empty file"},
     {"cd",     cmd_cd,     "change dir to file"},
     {"pwd",    cmd_pwd,    "show current path"},
-    {"ed",    cmd_ed,     "Quark editor"},
+    {"ed",     cmd_ed,     "Quark editor"},
+    {"rm",     cmd_rm,     "remove file/dir"},
     {NULL, NULL, NULL}
 };
+
+int cmd_rm(int argc, char** argv) {
+    if (argc < 2 || argc > 2) {
+        SHELL_PRINTF("usage: rm <path>\r\n");
+        return -1;
+    }
+
+    if(fs_is_dir(argv[1])) {
+        fs_rmdir(argv[1]);
+    } else if (fs_is_file(argv[1])) {
+        fs_rm(argv[1]);
+    } else {
+        SHELL_PRINTF("usage: rm <path>\r\n");
+        return -1;
+    }
+
+    return 0;
+}
 
 int cmd_ed(int argc, char** argv) {
     if (argc < 2) {
@@ -143,6 +162,14 @@ void shell_main() {
         SHELL_PRINTF("%s", SHELL_INFO);
         
         shell_uart_fflush(shell_buf);
+
+        for (int i = 0; i < 32; i ++) {
+            if (shell_buf[i] == '\r' ||
+                shell_buf[i] == '\n') {
+                shell_buf[i] = '\0';
+            }
+        }
+
 
         argc = shell_parse_command(shell_buf, argv);
 

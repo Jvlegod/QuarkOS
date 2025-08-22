@@ -516,7 +516,7 @@ static int lookup_file_abs(const char* abs_path, uint32_t* out_ino_id, struct fs
     return 0;
 }
 
-int fs_read_all(const char* path, void* buf, unsigned cap){
+int fs_read_all(const char* path, void* buf, unsigned cap) {
     if (!g_mounted) return -1;
     char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
     if (cap == 0) return 0;
@@ -543,7 +543,7 @@ int fs_read_all(const char* path, void* buf, unsigned cap){
     return (int)copied;
 }
 
-int fs_write_all(const char* path, const void* data, unsigned n){
+int fs_write_all(const char* path, const void* data, unsigned n) {
     if (!g_mounted) return -1;
     char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
 
@@ -602,4 +602,169 @@ int fs_write_all(const char* path, const void* data, unsigned n){
     if (inode_write(ino_id, &ino) != 0) return -1;
 
     return (int)written;
+}
+
+static int dir_remove_entry(struct fs_inode* dir, uint32_t dir_ino,
+                            const char* name, uint32_t* removed_ino) {
+    if (dir->type != FS_IT_DIR) return -1;
+
+    unsigned char buf[FS_BLOCK_SIZE];
+
+    for (uint32_t b = 0; b < dir->nblocks && b < 10; ++b) {
+        if (dir->direct[b] == 0) continue;
+        if (fs_read_block(dir->direct[b], buf) != 0) return -1;
+
+        struct fs_dirent* de = (struct fs_dirent*)buf;
+        for (uint32_t i = 0; i < FS_DIRENTS_PER_BLK; ++i) {
+            if (de[i].ino != 0 && strncmp(de[i].name, name, FS_NAME_MAX) == 0) {
+                if (removed_ino) *removed_ino = de[i].ino;
+
+                de[i].ino = 0;
+                memset(de[i].name, 0, FS_NAME_MAX);
+
+                if (fs_write_block(dir->direct[b], buf) != 0) return -1;
+
+                if (dir->size >= 64) dir->size -= 64;
+                if (inode_write(dir_ino, dir) != 0) return -1;
+                return 0;
+            }
+        }
+    }
+    return -1;
+}
+
+static int dir_is_empty(const struct fs_inode* dir) {
+    if (dir->type != FS_IT_DIR) return 0;
+
+    if (dir->nblocks == 0) return 1;
+
+    unsigned char buf[FS_BLOCK_SIZE];
+    for (uint32_t b = 0; b < dir->nblocks && b < 10; ++b) {
+        if (dir->direct[b] == 0) continue;
+        if (fs_read_block(dir->direct[b], buf) != 0) return 0;
+
+        struct fs_dirent* de = (struct fs_dirent*)buf;
+        for (uint32_t i = 0; i < FS_DIRENTS_PER_BLK; ++i) {
+            if (de[i].ino != 0) return 0;
+        }
+    }
+    return 1;
+}
+
+int fs_rm(const char* path) {
+    if (!g_mounted) return -1;
+
+    char abs[FS_PATH_MAX];
+    fs_to_abs(path, abs);
+
+    if (strcmp(abs, "/") == 0) return -1;
+
+    uint32_t pino; const char* name;
+    if (resolve_parent(abs, &pino, &name) != 0) return -1;
+    if (strcmp(name, "/") == 0) return -1;
+
+    struct fs_inode parent;
+    if (inode_read(pino, &parent) != 0) return -1;
+    if (parent.type != FS_IT_DIR) return -1;
+
+    struct fs_dirent de;
+    if (dir_find_entry(&parent, name, &de, 0, 0) != 0) return -1;
+
+    struct fs_inode ino;
+    if (inode_read(de.ino, &ino) != 0) return -1;
+    if (ino.type != FS_IT_FILE) return -1;
+
+    for (uint32_t i = 0; i < ino.nblocks && i < 10; ++i) {
+        if (ino.direct[i]) {
+            if (free_dblock(ino.direct[i]) != 0) return -1;
+        }
+    }
+
+    uint32_t removed_ino = 0;
+    if (dir_remove_entry(&parent, pino, name, &removed_ino) != 0) return -1;
+
+    if (free_inode(de.ino) != 0) return -1;
+
+    return 0;
+}
+
+int fs_rmdir(const char* path) {
+    if (!g_mounted) return -1;
+
+    char abs[FS_PATH_MAX];
+    fs_to_abs(path, abs);
+
+    if (strcmp(abs, "/") == 0) return -1;
+
+    uint32_t pino; const char* name;
+    if (resolve_parent(abs, &pino, &name) != 0) return -1;
+    if (strcmp(name, "/") == 0) return -1;
+
+    struct fs_inode parent;
+    if (inode_read(pino, &parent) != 0) return -1;
+    if (parent.type != FS_IT_DIR) return -1;
+
+    struct fs_dirent de;
+    if (dir_find_entry(&parent, name, &de, 0, 0) != 0) return -1;
+
+    struct fs_inode dino;
+    if (inode_read(de.ino, &dino) != 0) return -1;
+    if (dino.type != FS_IT_DIR) return -1;
+
+    if (!dir_is_empty(&dino)) return -1;
+
+    for (uint32_t i = 0; i < dino.nblocks && i < 10; ++i) {
+        if (dino.direct[i]) {
+            if (free_dblock(dino.direct[i]) != 0) return -1;
+        }
+    }
+
+    uint32_t removed_ino = 0;
+    if (dir_remove_entry(&parent, pino, name, &removed_ino) != 0) return -1;
+
+    if (free_inode(de.ino) != 0) return -1;
+
+    return 0;
+}
+
+int fs_typeof(const char* path, uint16_t* out_type) {
+    if (!g_mounted) return -1;
+    if (!path || !out_type) return -1;
+
+    char abs[FS_PATH_MAX];
+    fs_to_abs(path, abs);
+
+    if (strcmp(abs, "/") == 0) {
+        *out_type = FS_IT_DIR;
+        return 0;
+    }
+
+    uint32_t pino; const char* name;
+    if (resolve_parent(abs, &pino, &name) != 0) return -1;
+    if (strcmp(name, "/") == 0) return -1;
+
+    struct fs_inode parent;
+    if (inode_read(pino, &parent) != 0) return -1;
+    if (parent.type != FS_IT_DIR) return -1;
+
+    struct fs_dirent de;
+    if (dir_find_entry(&parent, name, &de, 0, 0) != 0) return -1;
+
+    struct fs_inode node;
+    if (inode_read(de.ino, &node) != 0) return -1;
+
+    *out_type = node.type;
+    return 0;
+}
+
+int fs_is_file(const char* path) {
+    uint16_t t;
+    if (fs_typeof(path, &t) != 0) return -1;
+    return (t == FS_IT_FILE) ? 1 : 0;
+}
+
+int fs_is_dir(const char* path) {
+    uint16_t t;
+    if (fs_typeof(path, &t) != 0) return -1;
+    return (t == FS_IT_DIR) ? 1 : 0;
 }

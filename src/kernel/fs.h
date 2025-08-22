@@ -6,6 +6,16 @@
 #include "cstdlib.h"
 #include "virtio.h"
 
+// block 0         : 未用/保留
+// block 1         : 超级块(superblock)
+// block 2         : inode 位图(1 bit 表示一个 inode 占用)
+// block 3         : 数据块位图(1 bit 表示一个数据块占用)
+// block 4..(4+N-1): inode 表(N = FS_INODE_TABLE_BLKS，注释里是 32)
+// block data_start: 数据区起始(= 4 + inode_table_blocks)
+// ...
+// block total-1   : 数据区结束
+
+
 #define FS_BLOCK_SIZE     4096u
 #define FS_SECTOR_SIZE     512u
 #define FS_SECTORS_PER_BLK (FS_BLOCK_SIZE / FS_SECTOR_SIZE)
@@ -37,5 +47,10 @@ int fs_chdir(const char* path);
 int fs_read_all(const char* path, void* buf, unsigned cap);
 int fs_write_all(const char* path, const void* data, unsigned n);
 const char* fs_get_cwd(void);
+int fs_rm(const char* path);
+int fs_rmdir(const char* path);
+int fs_typeof(const char* path, uint16_t* out_type);
+int fs_is_file(const char* path);
+int fs_is_dir(const char* path);
 
 #endif /* FS_H */

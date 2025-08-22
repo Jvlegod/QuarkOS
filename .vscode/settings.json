@@ -76,6 +76,7 @@
         "hash_set": "c",
         "iomanip": "c",
         "span": "c",
-        "semaphore": "c"
+        "semaphore": "c",
+        "ios": "c"
     }
 }

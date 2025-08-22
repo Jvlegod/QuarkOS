@@ -42,4 +42,11 @@ static inline uint64_t atomic_load_u64(const volatile uint64_t *ptr) {
     return val;
 }
 
+#define cpu_mb()  __asm__ __volatile__("fence rw,rw" ::: "memory")
+#define cpu_wmb() __asm__ __volatile__("fence w,w"   ::: "memory")
+#define cpu_rmb() __asm__ __volatile__("fence r,r"   ::: "memory")
+
+#define READ_ONCE(x)  (*(volatile __typeof__(x) *)&(x))
+#define WRITE_ONCE(x,v) do { (*(volatile __typeof__(x) *)&(x)) = (v); } while (0)
+
 #endif /* __REGS_H__ */

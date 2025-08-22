@@ -6,8 +6,10 @@
 #include "hwtimer.h"
 #include "interrupt.h"
 #include "lock.h"
-#include "virtio.h"
+#include "virtio_blk.h"
+#include "virtio_gpu.h"
 #include "fs.h"
+
 void start_kernel(void)
 {
 	uart_init();
@@ -27,6 +29,11 @@ void start_kernel(void)
         while (1);
     }
 	fs_test();
+    if (virtio_gpu_init() != 0) {
+		kprintf("[BOOT] virtio gpu init failed!\r\n");
+        while (1);
+    }
+	gpu_test();
 	// task init should after uart and mem.
 	int hartid = read_tp();
 	task_init(hartid);

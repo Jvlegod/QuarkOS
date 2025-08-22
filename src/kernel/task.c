@@ -44,6 +44,7 @@ static void init_idle_task(int hartid) {
     
     uint64_t *sp = get_kernel_stack(hartid);
     
+    // riscv64
     idle->ctx.ra = (uint64_t)idle_task;
     idle->ctx.sp = (uint64_t)sp;
     // MIE = 0
@@ -74,6 +75,7 @@ void task_create(void (*entry)(void*), void *arg) {
 
     uint64_t *sp = get_user_stack(task_count);
 
+    // riscv64
     t->ctx.a0 = (uint64_t)arg;
     t->ctx.ra = (uint64_t)entry;
     t->ctx.sp = (uint64_t)sp; // stack frame pointer
@@ -105,6 +107,7 @@ void task_int_yield() {
 
     new = &tasks[current_task].ctx;
     
+    // riscv64
     __asm__ volatile (
         "mv a0, %0\n"
         "jal ctx_int_switch"
@@ -125,6 +128,7 @@ void task_yield() {
 
     new = &tasks[current_task].ctx;
     
+    // riscv64
     __asm__ volatile (
         "mv a0, %0\n"
         "mv a1, %1\n"

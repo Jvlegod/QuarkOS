@@ -5,7 +5,8 @@
 #include "platform.h"
 #include "kprintf.h"
 #include "ktypes.h"
-#include "virtio.h"
+#include "virtio_blk.h"
+#include "virtio_gpu.h"
 #include "cstdlib.h"
 #include "fs.h"
 
@@ -90,4 +91,8 @@ void fs_test() {
     fs_ls("/");
     fs_ls("/etc");
     TEST_PRINTF("FS TEST PASSED\n");
+}
+
+void gpu_test() {
+    virtio_gpu_present_demo();
 }

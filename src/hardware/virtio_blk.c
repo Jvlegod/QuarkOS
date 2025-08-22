@@ -1,47 +1,5 @@
 #include "virtio.h"
-
-#ifndef VIRT_TO_PHYS
-#define VIRT_TO_PHYS(p) ((uintptr_t)(p))
-#endif
-
-#define MMIO_MAGIC                0x000
-#define MMIO_VERSION              0x004
-#define MMIO_DEVICE_ID            0x008
-#define MMIO_VENDOR_ID            0x00c
-#define MMIO_DEVICE_FEATURES      0x010
-#define MMIO_DRIVER_FEATURES      0x020
-#define MMIO_QUEUE_SEL            0x030
-#define MMIO_QUEUE_NUM_MAX        0x034
-#define MMIO_QUEUE_NUM            0x038
-#define MMIO_QUEUE_NOTIFY         0x050
-#define MMIO_INTERRUPT_STATUS     0x060
-#define MMIO_INTERRUPT_ACK        0x064
-#define MMIO_STATUS               0x070
-#define MMIO_CONFIG               0x100
-
-#define MMIO_DEVICE_FEATURES_SEL  0x014
-#define MMIO_DRIVER_FEATURES_SEL  0x024
-#define MMIO_QUEUE_READY          0x044
-#define MMIO_QUEUE_DESC_LOW       0x080
-#define MMIO_QUEUE_DESC_HIGH      0x084
-#define MMIO_QUEUE_AVAIL_LOW      0x090
-#define MMIO_QUEUE_AVAIL_HIGH     0x094
-#define MMIO_QUEUE_USED_LOW       0x0a0
-#define MMIO_QUEUE_USED_HIGH      0x0a4
-
-#define MMIO_GUEST_PAGE_SIZE      0x028
-#define MMIO_QUEUE_ALIGN          0x03c
-#define MMIO_QUEUE_PFN            0x040
-
-/* ----------------- MMIO helpers ----------------- */
-static volatile uint8_t *mmio = (volatile uint8_t*)VIRTIO_MMIO_BASE;
-
-static inline void w32(volatile void *a, uint32_t v){ *(volatile uint32_t*)a = v; barrier(); }
-static inline uint32_t r32(volatile void *a){ uint32_t v = *(volatile uint32_t*)a; barrier(); return v; }
-static inline void wr64(volatile uint8_t *base, uint32_t off_low, uint64_t val){
-    w32(base + off_low,     (uint32_t)(val & 0xffffffffu));
-    w32(base + off_low + 4, (uint32_t)(val >> 32));
-}
+#include "virtio_blk.h"
 
 static uint64_t g_virtio_capacity_sectors = 0;
 

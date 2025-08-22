@@ -105,7 +105,10 @@ run: all
 	-smp 1 \
 	-drive id=hd0,file=disk.img,if=none,format=raw \
 	-device virtio-blk-device,drive=hd0,bus=virtio-mmio-bus.0 \
-	-device virtio-keyboard-device \
+	-device virtio-keyboard-device,bus=virtio-mmio-bus.1 \
+	-device virtio-tablet-device,bus=virtio-mmio-bus.2 \
+	-device virtio-gpu-device,bus=virtio-mmio-bus.3 \
+	-display gtk \
 	-kernel $(KERNEL_ELF) \
 	-monitor stdio \
 

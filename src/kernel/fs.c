@@ -501,3 +501,105 @@ int fs_chdir(const char* path){
 const char* fs_get_cwd(void){
     return g_cwd;
 }
+
+static int lookup_file_abs(const char* abs_path, uint32_t* out_ino_id, struct fs_inode* out_ino){
+    if (strcmp(abs_path, "/") == 0) return -1;
+    uint32_t pino; const char* name;
+    if (resolve_parent(abs_path, &pino, &name) != 0) return -1;
+    struct fs_inode parent;
+    if (inode_read(pino, &parent) != 0) return -1;
+    struct fs_dirent de;
+    if (dir_find_entry(&parent, name, &de, 0, 0) != 0) return -1;
+    if (inode_read(de.ino, out_ino) != 0) return -1;
+    if (out_ino->type != FS_IT_FILE) return -1;
+    if (out_ino_id) *out_ino_id = de.ino;
+    return 0;
+}
+
+int fs_read_all(const char* path, void* buf, unsigned cap){
+    if (!g_mounted) return -1;
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+    if (cap == 0) return 0;
+
+    struct fs_inode ino;
+    uint32_t ino_id;
+    if (lookup_file_abs(abs, &ino_id, &ino) != 0) {
+        return 0;
+    }
+
+    unsigned to_read = ino.size;
+    if (to_read > cap) to_read = cap;
+
+    static unsigned char blk[FS_BLOCK_SIZE];
+    unsigned copied = 0;
+    for (unsigned bi = 0; bi < ino.nblocks && copied < to_read && bi < 10; ++bi) {
+        if (ino.direct[bi] == 0) break;
+        if (fs_read_block(ino.direct[bi], blk) != 0) break;
+        unsigned left = to_read - copied;
+        unsigned take = (left < FS_BLOCK_SIZE) ? left : FS_BLOCK_SIZE;
+        memcpy((unsigned char*)buf + copied, blk, take);
+        copied += take;
+    }
+    return (int)copied;
+}
+
+int fs_write_all(const char* path, const void* data, unsigned n){
+    if (!g_mounted) return -1;
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+
+    struct fs_inode ino;
+    uint32_t ino_id;
+    if (lookup_file_abs(abs, &ino_id, &ino) != 0) {
+        if (fs_touch(abs) != 0) return -1;
+        if (lookup_file_abs(abs, &ino_id, &ino) != 0) return -1;
+    }
+
+    unsigned need = (n + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
+    if (need > 10) need = 10;
+
+    uint32_t blk_ids[10];
+    for (unsigned i = 0; i < 10; ++i) blk_ids[i] = 0;
+
+    for (unsigned i = 0; i < need && i < ino.nblocks && i < 10; ++i) {
+        blk_ids[i] = ino.direct[i];
+    }
+
+    for (unsigned i = ino.nblocks; i < need && i < 10; ++i) {
+        if (blk_ids[i] == 0) {
+            if (alloc_dblock(&blk_ids[i]) != 0) {
+                for (unsigned j = ino.nblocks; j < i; ++j)
+                    if (j < 10 && blk_ids[j] && (j >= ino.nblocks)) free_dblock(blk_ids[j]);
+                return -1;
+            }
+        }
+    }
+
+    static unsigned char blk[FS_BLOCK_SIZE];
+    unsigned written = 0;
+    const unsigned char* p = (const unsigned char*)data;
+    for (unsigned i = 0; i < need; ++i) {
+        unsigned left = n - written;
+        unsigned take = left < FS_BLOCK_SIZE ? left : FS_BLOCK_SIZE;
+        if (take < FS_BLOCK_SIZE) {
+            if (fs_read_block(blk_ids[i], blk) != 0) return -1;
+            memcpy(blk, p + written, take);
+        } else {
+            memcpy(blk, p + written, FS_BLOCK_SIZE);
+        }
+        if (fs_write_block(blk_ids[i], blk) != 0) return -1;
+        written += take;
+    }
+
+    if (ino.nblocks > need) {
+        for (unsigned i = need; i < ino.nblocks && i < 10; ++i) {
+            if (ino.direct[i]) { free_dblock(ino.direct[i]); ino.direct[i] = 0; }
+        }
+    }
+
+    for (unsigned i = 0; i < 10; ++i) ino.direct[i] = (i < need) ? blk_ids[i] : 0;
+    ino.nblocks = need;
+    ino.size    = n;
+    if (inode_write(ino_id, &ino) != 0) return -1;
+
+    return (int)written;
+}

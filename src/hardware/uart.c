@@ -103,3 +103,15 @@ bool shell_uart_fflush(char *buf) {
 	}
     return true;
 }
+
+int editor_uart_fflush(char *buf) {
+	int i = 0;
+	while (!shell_if_fflush());
+	uart_putc('\n');
+	while (uart_rx_buf.rx_head != uart_rx_buf.rx_tail) {
+		buf[i++] = uart_rx_buf.rx_buf[uart_rx_buf.rx_tail]; // TODO: buf may out of range
+		uart_rx_buf.rx_buf[uart_rx_buf.rx_tail] = 0;
+		uart_rx_buf.rx_tail = (uart_rx_buf.rx_tail + 1) % RING_BUF_SIZE;
+	}
+    return i;
+}

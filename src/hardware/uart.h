@@ -43,5 +43,6 @@ void uart_isr();
 
 bool shell_uart_fflush(char *buf);
 bool shell_if_fflush();
+int editor_uart_fflush(char *buf);
 
 #endif /* __UART_H__ */

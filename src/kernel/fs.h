@@ -34,6 +34,8 @@ int fs_ls(const char* path);
 int fs_mkdir(const char* path);
 int fs_touch(const char* path);
 int fs_chdir(const char* path);
+int fs_read_all(const char* path, void* buf, unsigned cap);
+int fs_write_all(const char* path, const void* data, unsigned n);
 const char* fs_get_cwd(void);
 
 #endif /* FS_H */

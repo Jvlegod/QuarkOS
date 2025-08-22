@@ -36,5 +36,6 @@ int cmd_mkdir(int argc, char** argv);
 int cmd_touch(int argc, char** argv);
 int cmd_cd(int argc, char** argv);
 int cmd_pwd(int argc, char** argv);
+int cmd_ed(int argc, char** argv);
 
 #endif

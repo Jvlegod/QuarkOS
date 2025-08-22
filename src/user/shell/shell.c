@@ -3,6 +3,7 @@
 #include "app.h"
 #include "task.h"
 #include "fs.h"
+#include "editor.h"
 
 #define MAX_ARGC 8
 static char shell_buf[RING_BUF_SIZE];
@@ -24,8 +25,18 @@ static struct shell_command cmd_table[] = {
     {"touch",  cmd_touch,  "create empty file"},
     {"cd",     cmd_cd,     "change dir to file"},
     {"pwd",    cmd_pwd,    "show current path"},
+    {"ed",    cmd_ed,     "Quark editor"},
     {NULL, NULL, NULL}
 };
+
+int cmd_ed(int argc, char** argv) {
+    if (argc < 2) {
+        SHELL_PRINTF("usage: ed <path>\r\n");
+        return -1;
+    }
+    editor_run(argv[1]);
+    return 0;
+}
 
 int cmd_ls(int argc, char** argv) {
     return fs_ls(argc >= 2 ? argv[1] : NULL);

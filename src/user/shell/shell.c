@@ -153,7 +153,7 @@ static int shell_parse_command(char *cmdline, char *argv[]) {
 }
 
 void shell_main() {
-    SHELL_PRINTF("\r\n%s-%s\r\n", OS_NAME, VERSION(0.1));
+    SHELL_PRINTF("\r\n%s-%s\r\n", OS_NAME, VERSION(1.0));
     const char **line = OS_ART;
     while (*line != NULL) {
         SHELL_PRINTF("%s\n", *line);

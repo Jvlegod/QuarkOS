@@ -22,22 +22,31 @@ static struct shell_command cmd_table[] = {
     {"ls",     cmd_ls,     "list directory"},
     {"mkdir",  cmd_mkdir,  "create directory"},
     {"touch",  cmd_touch,  "create empty file"},
+    {"cd",     cmd_cd,     "change dir to file"},
+    {"pwd",    cmd_pwd,    "show current path"},
     {NULL, NULL, NULL}
 };
 
 int cmd_ls(int argc, char** argv) {
-    const char* p = (argc >= 2) ? argv[1] : "/";
-    return fs_ls(p);
+    return fs_ls(argc >= 2 ? argv[1] : NULL);
 }
-
+int cmd_touch(int argc, char** argv) {
+    if (argc < 2) { SHELL_PRINTF("usage: touch <name|/path>\r\n"); return -1; }
+    return fs_touch(argv[1]);
+}
 int cmd_mkdir(int argc, char** argv) {
-    if (argc < 2) { SHELL_PRINTF("usage: mkdir /path\r\n"); return -1; }
+    if (argc < 2) { SHELL_PRINTF("usage: mkdir <name|/path>\r\n"); return -1; }
     return fs_mkdir(argv[1]);
 }
-
-int cmd_touch(int argc, char** argv) {
-    if (argc < 2) { SHELL_PRINTF("usage: touch /path\r\n"); return -1; }
-    return fs_touch(argv[1]);
+int cmd_cd(int argc, char** argv) {
+    const char* p = (argc>=2) ? argv[1] : "/";
+    int rc = fs_chdir(p);
+    if (rc==0) SHELL_PRINTF("cwd: %s\r\n", fs_get_cwd());
+    return rc;
+}
+int cmd_pwd(int argc, char** argv) {
+    SHELL_PRINTF("%s\r\n", fs_get_cwd());
+    return 0;
 }
 
 int cmd_start(int argc, char **argv) {

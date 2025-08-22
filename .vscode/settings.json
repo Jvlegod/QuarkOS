@@ -63,6 +63,19 @@
         "tuple": "c",
         "typeindex": "c",
         "variant": "c",
-        "*.txx": "c"
+        "*.txx": "c",
+        "condition_variable": "c",
+        "cstddef": "c",
+        "deque": "c",
+        "forward_list": "c",
+        "list": "c",
+        "unordered_set": "c",
+        "vector": "c",
+        "iterator": "c",
+        "hash_map": "c",
+        "hash_set": "c",
+        "iomanip": "c",
+        "span": "c",
+        "semaphore": "c"
     }
 }

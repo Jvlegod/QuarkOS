@@ -14,7 +14,6 @@ void memcpy(void *dest, const void *src, size_t n) {
     for (size_t i = 0; i < n; i++) {
         d[i] = s[i];
     }
-
 }
 
 /**
@@ -37,18 +36,18 @@ int memcmp(const void *s1, const void *s2, size_t n) {
     return 0;
 }
 
-int memset(void *s, int c, size_t n) {
+bool memset(void *s, int c, size_t n) {
     unsigned char *p = (unsigned char*)s;
 
     if (s == NULL || n == 0) {
-        return 0;
+        return false;
     }
 
     while (n--) {
         *p++ = (unsigned char)c;
     }
 
-    return 1;
+    return true;
 }
 
 size_t strlen(const char *s) {
@@ -62,4 +61,23 @@ int strncmp(const char *s1, const char *s2, size_t n) {
         if (*s1 != *s2) return *s1 - *s2;
     }
     return n ? *s1 - *s2 : 0;
+}
+
+char *strcpy(char *dest, const char *src) {
+    char *d = dest;
+    while ((*d++ = *src++) != '\0') {
+        /* copy including the '\0' */
+    }
+    return dest;
+}
+
+char *strcat(char *dest, const char *src) {
+    char *d = dest;
+
+    while (*d) d++;
+
+    while ((*d++ = *src++) != '\0') {
+        /* append including the '\0' */
+    }
+    return dest;
 }

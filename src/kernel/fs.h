@@ -20,16 +20,20 @@
 
 #define FS_MAGIC 0x31534651u
 
+#define FS_PATH_MAX 256
+
 enum fs_inode_type { FS_IT_NONE = 0, FS_IT_FILE = 1, FS_IT_DIR = 2 };
 
-int  fs_mount(void);
+int fs_mount(void);
 
-int  fs_format(uint64_t total_sectors);
+int fs_format(uint64_t total_sectors);
 
-int  fs_mount_or_mkfs(uint64_t total_sectors);
+int fs_mount_or_mkfs(uint64_t total_sectors);
 
-int  fs_ls(const char* path);
-int  fs_mkdir(const char* path);
-int  fs_touch(const char* path);
+int fs_ls(const char* path);
+int fs_mkdir(const char* path);
+int fs_touch(const char* path);
+int fs_chdir(const char* path);
+const char* fs_get_cwd(void);
 
 #endif /* FS_H */

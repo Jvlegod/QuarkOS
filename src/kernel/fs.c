@@ -2,6 +2,8 @@
 #include "ktypes.h"
 #include "kprintf.h"
 
+static char g_cwd[FS_PATH_MAX] = "/";
+
 struct fs_super {
     uint32_t magic;
     uint32_t blk_size;
@@ -120,6 +122,60 @@ static int free_dblock(uint32_t abs_blk){
     uint32_t i = abs_blk - g_sb.data_start_block;
     bitmap_clear(bm, i);
     return write_data_bitmap(bm);
+}
+
+static void fs_to_abs(const char* path, char out[FS_PATH_MAX]) {
+    char tmp[FS_PATH_MAX];
+
+    if (!path || !path[0]) {
+        strcpy(out, g_cwd);
+        return;
+    }
+    if (path[0] == '/') {
+        strcpy(tmp, path);
+    } else {
+        strcpy(tmp, g_cwd);
+        size_t n = strlen(tmp);
+        if (n == 0) { tmp[0] = '/'; tmp[1] = '\0'; n = 1; }
+        if (tmp[n-1] != '/') strcat(tmp, "/");
+        strcat(tmp, path);
+    }
+
+    int i = 0, j = 0;
+
+    out[j++] = '/';
+    while (tmp[i] == '/') i++;
+
+    while (tmp[i]) {
+        char seg[FS_NAME_MAX];
+        int k = 0;
+
+        while (tmp[i] && tmp[i] != '/' && k < (int)FS_NAME_MAX - 1) {
+            seg[k++] = tmp[i++];
+        }
+        seg[k] = '\0';
+        while (tmp[i] == '/') i++;
+
+        if (k == 0 || (k == 1 && seg[0] == '.')) {
+            continue;
+        }
+        if (k == 2 && seg[0] == '.' && seg[1] == '.') {
+            if (j > 1) {
+                j--; while (j > 0 && out[j] != '/') j--;
+                j = (j == 0) ? 1 : j + 1;
+            }
+            continue;
+        }
+
+        for (int t = 0; t < k && j < (int)FS_PATH_MAX - 1; ++t) {
+            out[j++] = seg[t];
+        }
+
+        if (tmp[i] && j < (int)FS_PATH_MAX - 1) out[j++] = '/';
+    }
+
+    if (j > 1 && out[j-1] == '/') j--;
+    out[j] = '\0';
 }
 
 static int dir_find_entry(const struct fs_inode* dir, const char* name, struct fs_dirent* out, uint32_t* out_blk, uint32_t* out_idx){
@@ -330,25 +386,72 @@ static int create_empty(const char* path, int as_dir){
     return 0;
 }
 
-int fs_mkdir(const char* path){ return create_empty(path, /*as_dir=*/1); }
-int fs_touch(const char* path){ return create_empty(path, /*as_dir=*/0); }
-
-int fs_ls(const char* path){
+static int create_empty_abs(const char* abs_path, int as_dir){
     if(!g_mounted) return -1;
 
-    if(!path || path[0]==0) path = "/";
+    uint32_t pino; const char* name;
+    if(resolve_parent(abs_path, &pino, &name)!=0) return -1;
+    if(strcmp(name, "/")==0) return -1;
+
+    struct fs_inode parent;
+    if(inode_read(pino, &parent)!=0) return -1;
+    if(parent.type != FS_IT_DIR) return -1;
+
+    struct fs_dirent exist;
+    if(dir_find_entry(&parent, name, &exist, 0,0)==0){
+        struct fs_inode tmp;
+        if(inode_read(exist.ino, &tmp)!=0) return -1;
+        if(as_dir && tmp.type!=FS_IT_DIR) return -1;
+        if(!as_dir && tmp.type!=FS_IT_FILE) return -1;
+        return 0;
+    }
+
+    uint32_t cino;
+    if(alloc_inode(&cino)!=0) return -1;
+
+    struct fs_inode node;
+    memset(&node, 0, sizeof(node));
+    node.type = as_dir ? FS_IT_DIR : FS_IT_FILE;
+    node.links = 1;
+    node.size = 0;
+    node.nblocks = 0;
+    if(inode_write(cino, &node)!=0){ free_inode(cino); return -1; }
+
+    if(dir_add_entry(&parent, pino, name, cino)!=0){
+        free_inode(cino); return -1;
+    }
+    return 0;
+}
+
+int fs_mkdir(const char* path){
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+    return create_empty_abs(abs, /*as_dir=*/1);
+}
+
+int fs_touch(const char* path){
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+    return create_empty_abs(abs, /*as_dir=*/0);
+}
+
+int fs_ls(const char* path){
+    char abs[FS_PATH_MAX];
+    if (!path || !path[0]) path = g_cwd;
+    fs_to_abs(path, abs);
+
+    if(!g_mounted) return -1;
 
     uint32_t ino_id = 1;
     struct fs_inode ino;
-    if(strcmp(path, "/")!=0){
+
+    if(strcmp(abs, "/")!=0){
         uint32_t pino; const char* name;
-        if(resolve_parent(path, &pino, &name)!=0) return -1;
+        if(resolve_parent(abs, &pino, &name)!=0) return -1;
         struct fs_inode parent;
         if(inode_read(pino, &parent)!=0) return -1;
 
         struct fs_dirent de;
         if(dir_find_entry(&parent, name, &de, 0,0)!=0){
-            kprintf("ls: not found: %s\r\n", path); return -1;
+            kprintf("ls: not found: %s\r\n", abs); return -1;
         }
         ino_id = de.ino;
     }
@@ -356,20 +459,45 @@ int fs_ls(const char* path){
     if(inode_read(ino_id, &ino)!=0) return -1;
 
     if(ino.type == FS_IT_FILE){
-        kprintf("%s\r\n", path);
+        kprintf("%s\r\n", abs);
         return 0;
     }
 
-    unsigned char buf[FS_BLOCK_SIZE];
+    static unsigned char buf[FS_BLOCK_SIZE];
     for(uint32_t b=0;b<ino.nblocks && b<10;b++){
         if(ino.direct[b]==0) continue;
         if(fs_read_block(ino.direct[b], buf)!=0) return -1;
         struct fs_dirent* de = (struct fs_dirent*)buf;
         for(uint32_t i=0;i<FS_DIRENTS_PER_BLK;i++){
-            if(de[i].ino){
-                kprintf("%s\r\n", de[i].name);
-            }
+            if(de[i].ino) kprintf("%s\r\n", de[i].name);
         }
     }
     return 0;
+}
+
+int fs_chdir(const char* path){
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+
+    uint32_t ino_id = 1;
+    if(strcmp(abs, "/") != 0){
+        uint32_t pino; const char* name;
+        if(resolve_parent(abs, &pino, &name)!=0) return -1;
+        struct fs_inode parent;
+        if(inode_read(pino, &parent)!=0) return -1;
+
+        struct fs_dirent de;
+        if(dir_find_entry(&parent, name, &de, 0,0)!=0) return -1;
+        ino_id = de.ino;
+    }
+
+    struct fs_inode ino;
+    if(inode_read(ino_id, &ino)!=0) return -1;
+    if(ino.type != FS_IT_DIR) return -1;
+
+    strcpy(g_cwd, abs);
+    return 0;
+}
+
+const char* fs_get_cwd(void){
+    return g_cwd;
 }

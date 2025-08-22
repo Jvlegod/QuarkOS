@@ -87,8 +87,6 @@ void blk_test(void) {
 void fs_test() {
     fs_mkdir("/etc");
     fs_touch("/etc/config");
-    kprintf("ls /\r\n");
     fs_ls("/");
-    kprintf("ls /etc\r\n");
     fs_ls("/etc");
 }

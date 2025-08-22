@@ -8,6 +8,7 @@
 #include "lock.h"
 #include "virtio_blk.h"
 #include "gfx.h" /* #include "virtio_gpu.h" */
+#include "virtio_input.h"
 #include "fs.h"
 
 void start_kernel(void)
@@ -34,6 +35,12 @@ void start_kernel(void)
         while (1);
     }
 	gpu_test();
+	// if (input_init() != 0) {
+	// 	kprintf("[BOOT] input init failed!\r\n");
+    //     while (1);
+	// }
+
+	// input_test();
 	// task init should after uart and mem.
 	int hartid = read_tp();
 	task_init(hartid);

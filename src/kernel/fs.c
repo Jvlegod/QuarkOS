@@ -1,4 +1,5 @@
 #include "fs.h"
+#include "virtio_blk.h"
 #include "ktypes.h"
 #include "kprintf.h"
 

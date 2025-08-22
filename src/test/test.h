@@ -7,5 +7,6 @@ void task_test();
 void blk_test();
 void fs_test();
 void gpu_test();
+void input_test();
 
 #endif /* __TEST_H__ */

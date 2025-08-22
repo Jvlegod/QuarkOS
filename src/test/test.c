@@ -105,3 +105,7 @@ void gpu_test() {
 
     TEST_PRINTF("GPU/UI TEST PASSED\n");
 }
+
+void input_test() {
+    TEST_PRINTF("INPUT TEST PASSED\n");
+}

@@ -1,7 +1,14 @@
 #ifndef __CSTDLIB_H__
 #define __CSTDLIB_H__
 #include "ktypes.h"
-#include <stdarg.h> 
+#include <stdarg.h>
+
+#ifndef STATIC_ASSERT
+  #define __SA_CAT_(a,b) a##b
+  #define __SA_CAT(a,b)  __SA_CAT_(a,b)
+  #define STATIC_ASSERT(cond, msg) \
+      typedef char __SA_CAT(static_assert_at_line_, __LINE__)[ (cond) ? 1 : -1 ]
+#endif
 
 int strcmp(const char *s1, const char *s2);
 size_t strlen(const char *s);

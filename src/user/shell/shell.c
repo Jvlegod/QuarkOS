@@ -2,6 +2,7 @@
 #include "uart.h"
 #include "app.h"
 #include "task.h"
+#include "fs.h"
 
 #define MAX_ARGC 8
 static char shell_buf[RING_BUF_SIZE];
@@ -18,8 +19,26 @@ static struct shell_command cmd_table[] = {
     {"help",   cmd_help,   "show all cmd"},
     {"echo",   cmd_echo,   "echo"},
     {"start",  cmd_start,  "start a app"},
+    {"ls",     cmd_ls,     "list directory"},
+    {"mkdir",  cmd_mkdir,  "create directory"},
+    {"touch",  cmd_touch,  "create empty file"},
     {NULL, NULL, NULL}
 };
+
+int cmd_ls(int argc, char** argv) {
+    const char* p = (argc >= 2) ? argv[1] : "/";
+    return fs_ls(p);
+}
+
+int cmd_mkdir(int argc, char** argv) {
+    if (argc < 2) { SHELL_PRINTF("usage: mkdir /path\r\n"); return -1; }
+    return fs_mkdir(argv[1]);
+}
+
+int cmd_touch(int argc, char** argv) {
+    if (argc < 2) { SHELL_PRINTF("usage: touch /path\r\n"); return -1; }
+    return fs_touch(argv[1]);
+}
 
 int cmd_start(int argc, char **argv) {
     if (argc < 2) {
@@ -104,7 +123,9 @@ void shell_main() {
         SHELL_PRINTF("%s", SHELL_INFO);
         
         shell_uart_fflush(shell_buf);
+
         argc = shell_parse_command(shell_buf, argv);
+
         if (argc == 0) continue;
         
         struct shell_command *cmd;

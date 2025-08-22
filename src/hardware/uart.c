@@ -4,6 +4,8 @@
 #include "cstdlib.h"
 #include <stdarg.h> // impl by compiler
 
+static struct uart_buf uart_rx_buf;
+
 void uart_init()
 {
 	/* disable interrupts. */
@@ -41,32 +43,34 @@ void uart_puts(char *s) {
 	}
 }
 
-void uart_isr() {
+void uart_isr(void) {
     while (uart_read_reg(LSR) & LSR_RX_READY) {
         char c = uart_read_reg(RHR);
-        bool is_backspace = (c == 0x08 || c == 0x7F);
 
-        if (is_backspace) {
+        if (c == 0x08 || c == 0x7F) {
             if (uart_rx_buf.rx_head != uart_rx_buf.rx_tail) {
-                uart_rx_buf.rx_head = (uart_rx_buf.rx_head - 1 + RING_BUF_SIZE) % RING_BUF_SIZE;
-                uart_putc('\x08');
-                uart_putc(' ');
-                uart_putc('\x08');
+                uart_rx_buf.rx_head = (uart_rx_buf.rx_head + RING_BUF_SIZE - 1) % RING_BUF_SIZE;
+                if (uart_read_reg(LSR) & LSR_TX_IDLE) { uart_write_reg(THR, '\b'); }
+                if (uart_read_reg(LSR) & LSR_TX_IDLE) { uart_write_reg(THR, ' '); }
+                if (uart_read_reg(LSR) & LSR_TX_IDLE) { uart_write_reg(THR, '\b'); }
             } else {
-                uart_putc('\a');
+                if (uart_read_reg(LSR) & LSR_TX_IDLE) uart_write_reg(THR, '\a');
             }
+            continue;
+        }
+
+        uint16_t next = (uart_rx_buf.rx_head + 1) % RING_BUF_SIZE;
+        if (next != uart_rx_buf.rx_tail) {
+            uart_rx_buf.rx_buf[uart_rx_buf.rx_head] = c;
+            barrier();
+            uart_rx_buf.rx_head = next;
+            if (uart_read_reg(LSR) & LSR_TX_IDLE) uart_write_reg(THR, c);
         } else {
-            uint16_t next_head = (uart_rx_buf.rx_head + 1) % RING_BUF_SIZE;
-            if (next_head != uart_rx_buf.rx_tail) {
-                uart_rx_buf.rx_buf[uart_rx_buf.rx_head] = c;
-                uart_rx_buf.rx_head = next_head;
-                uart_putc(c);
-            } else {
-                uart_putc('\a');
-            }
+            if (uart_read_reg(LSR) & LSR_TX_IDLE) uart_write_reg(THR, '\a');
         }
     }
 }
+
 
 bool shell_if_fflush() {
     int i = uart_rx_buf.rx_tail;
@@ -79,7 +83,8 @@ bool shell_if_fflush() {
     }
     return false;
 }
-int shell_uart_fflush(char *buf) {
+
+bool shell_uart_fflush(char *buf) {
 	int i = 0;
 	while (!shell_if_fflush());
 	uart_putc('\n');
@@ -88,4 +93,5 @@ int shell_uart_fflush(char *buf) {
 		uart_rx_buf.rx_buf[uart_rx_buf.rx_tail] = 0;
 		uart_rx_buf.rx_tail = (uart_rx_buf.rx_tail + 1) % RING_BUF_SIZE;
 	}
+    return true;
 }

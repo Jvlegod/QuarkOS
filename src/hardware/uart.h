@@ -28,12 +28,10 @@
 #define RING_BUF_SIZE 256
 
 struct uart_buf {
-	char rx_buf[RING_BUF_SIZE];
-	uint16_t rx_head;
-	uint16_t rx_tail;
+	volatile uint16_t rx_head;
+	volatile uint16_t rx_tail;
+	volatile char rx_buf[RING_BUF_SIZE];
 };
-
-static struct uart_buf uart_rx_buf;
 
 // NS16550A
 void uart_init();
@@ -42,7 +40,7 @@ void uart_putc(char ch);
 void uart_puts(char *s);
 void uart_isr();
 
-int shell_uart_fflush(char *buf);
+bool shell_uart_fflush(char *buf);
 bool shell_if_fflush();
 
 #endif /* __UART_H__ */

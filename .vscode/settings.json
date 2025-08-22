@@ -18,6 +18,16 @@
         "cstdlib.h": "c",
         "initializer_list": "c",
         "utility": "c",
-        "compare": "c"
+        "compare": "c",
+        "random": "c",
+        "atomic": "c",
+        "chrono": "c",
+        "stop_token": "c",
+        "*.inc": "c",
+        "cstdint": "c",
+        "virtio.h": "c",
+        "string_view": "c",
+        "system_error": "c",
+        "format": "c"
     }
 }

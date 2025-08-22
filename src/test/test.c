@@ -7,6 +7,7 @@
 #include "ktypes.h"
 #include "virtio.h"
 #include "cstdlib.h"
+#include "fs.h"
 
 #define TEST_PRINTF(fmt, ...) \
     kprintf("[TEST]: " fmt , ##__VA_ARGS__)
@@ -32,7 +33,7 @@ void uart_test() {
     TEST_PRINTF("USART TEST PASSED\n");
 }
 
-void blk_read_write_test(void) {
+void blk_test(void) {
 #ifndef SECTOR_SIZE
 #define SECTOR_SIZE 512
 #endif
@@ -81,4 +82,13 @@ void blk_read_write_test(void) {
         }
     }
     TEST_PRINTF("BLOCK TEST PASSED\n");
+}
+
+void fs_test() {
+    fs_mkdir("/etc");
+    fs_touch("/etc/config");
+    kprintf("ls /\r\n");
+    fs_ls("/");
+    kprintf("ls /etc\r\n");
+    fs_ls("/etc");
 }

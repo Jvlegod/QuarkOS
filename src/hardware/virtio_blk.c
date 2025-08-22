@@ -43,7 +43,11 @@ static inline void wr64(volatile uint8_t *base, uint32_t off_low, uint64_t val){
     w32(base + off_low + 4, (uint32_t)(val >> 32));
 }
 
+static uint64_t g_virtio_capacity_sectors = 0;
+
+#ifndef PAGE
 #define PAGE 4096
+#endif
 
 static uint8_t  __attribute__((aligned(PAGE))) ring_modern[PAGE];
 static struct virtq_desc  *desc_m  = (struct virtq_desc*) ring_modern;
@@ -154,7 +158,6 @@ static int setup_queue_legacy(void){
     return 0;
 }
 
-/* ----------------- 公共初始化入口 ----------------- */
 int virtio_blk_init(void){
     uint32_t magic = r32(mmio + MMIO_MAGIC);
     uint32_t ver   = r32(mmio + MMIO_VERSION);
@@ -182,6 +185,7 @@ int virtio_blk_init(void){
     uint32_t cap_lo = r32(mmio + MMIO_CONFIG + 0);
     uint32_t cap_hi = r32(mmio + MMIO_CONFIG + 4);
     uint64_t capacity = ((uint64_t)cap_hi << 32) | cap_lo;
+    g_virtio_capacity_sectors = capacity;
     kprintf("virtio-blk: capacity=%lu sectors (512B)\n", (unsigned long long)capacity);
 
     w32(mmio + MMIO_STATUS, r32(mmio + MMIO_STATUS) | VIRTIO_STATUS_DRIVER_OK);
@@ -252,4 +256,8 @@ int blk_read(uint64_t sector, void *buf, uint16_t count){
 }
 int blk_write(uint64_t sector, const void *buf, uint16_t count){
     return virtio_blk_do(VIRTIO_BLK_T_OUT, sector, (void*)buf, count);
+}
+
+uint64_t virtio_capacity_sectors(void) {
+    return g_virtio_capacity_sectors;
 }

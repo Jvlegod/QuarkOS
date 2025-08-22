@@ -64,6 +64,7 @@ struct virtio_blk_req {
 
 /* ---- API ---- */
 int virtio_blk_init(void);
+uint64_t virtio_capacity_sectors(void);
 int blk_read(uint64_t sector, void *buf, uint16_t count);
 int blk_write(uint64_t sector, const void *buf, uint16_t count);
 

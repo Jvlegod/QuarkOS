@@ -17,11 +17,11 @@ struct fs_super {
 STATIC_ASSERT(sizeof(struct fs_super) <= 512, "super fits");
 
 struct fs_inode {
-    uint16_t type;       // enum fs_inode_type
-    uint16_t links;      // 链接计数（目录/文件引用）
-    uint32_t size;       // 字节数（目录则为目录项数*64 或者使用计数）
-    uint32_t nblocks;    // 数据块数量
-    uint32_t direct[10]; // 直接块号（绝对块号）
+    uint16_t type;        // enum fs_inode_type
+    uint16_t links;       // 链接计数（目录/文件引用）
+    uint32_t size;        // 字节数（目录则为目录项数*64 或者使用计数）
+    uint32_t nblocks;     // 数据块数量
+    uint32_t direct[10];  // 直接块号（绝对块号）
     uint32_t reserved[19];// 预留给将来的间接块等
 } __attribute__((packed));
 
@@ -72,7 +72,6 @@ static int inode_write(uint32_t ino, const struct fs_inode* in){
     return 0;
 }
 
-// ====== 读取整个位图块 ======
 static int read_inode_bitmap(unsigned char* bm){ return fs_read_block(g_sb.inode_map_block, bm); }
 static int write_inode_bitmap(const unsigned char* bm){ return fs_write_block(g_sb.inode_map_block, bm); }
 static int read_data_bitmap (unsigned char* bm){ return fs_read_block(g_sb.data_map_block, bm); }
@@ -99,13 +98,11 @@ static int free_inode(uint32_t ino){
     return write_inode_bitmap(bm);
 }
 static int alloc_dblock(uint32_t* out_blk){
-    // 数据区块号范围：g_sb.data_start_block .. g_sb.total_blocks-1
-    // data bitmap 的 bit 0 对应 data_start_block
     unsigned char bm[FS_BLOCK_SIZE];
     if(read_data_bitmap(bm)!=0) return -1;
 
     uint32_t max_data_blocks = (g_sb.total_blocks - g_sb.data_start_block);
-    if(max_data_blocks > FS_BLOCK_SIZE*8) max_data_blocks = FS_BLOCK_SIZE*8; // 本实现只用一块位图
+    if(max_data_blocks > FS_BLOCK_SIZE*8) max_data_blocks = FS_BLOCK_SIZE * 8;
 
     for(uint32_t i=0;i<max_data_blocks;i++){
         if(!bitmap_test(bm, i)){
@@ -125,7 +122,6 @@ static int free_dblock(uint32_t abs_blk){
     return write_data_bitmap(bm);
 }
 
-// ====== 目录工具 ======
 static int dir_find_entry(const struct fs_inode* dir, const char* name, struct fs_dirent* out, uint32_t* out_blk, uint32_t* out_idx){
     if(dir->type != FS_IT_DIR) return -1;
     unsigned char buf[FS_BLOCK_SIZE];
@@ -151,7 +147,6 @@ static int dir_find_entry(const struct fs_inode* dir, const char* name, struct f
 static int dir_add_entry(struct fs_inode* dir, uint32_t dir_ino, const char* name, uint32_t child_ino){
     unsigned char buf[FS_BLOCK_SIZE];
 
-    // 先找空位
     for(uint32_t b=0; b<dir->nblocks && b<10; b++){
         if(dir->direct[b]==0) continue;
         if(fs_read_block(dir->direct[b], buf)!=0) return -1;
@@ -171,8 +166,7 @@ static int dir_add_entry(struct fs_inode* dir, uint32_t dir_ino, const char* nam
         }
     }
 
-    // 没空位：分配新数据块
-    if(dir->nblocks >= 10) return -1; // 太满了
+    if(dir->nblocks >= 10) return -1;
     uint32_t newblk;
     if(alloc_dblock(&newblk)!=0) return -1;
     memset(buf, 0, sizeof(buf));
@@ -188,38 +182,31 @@ static int dir_add_entry(struct fs_inode* dir, uint32_t dir_ino, const char* nam
     return inode_write(dir_ino, dir);
 }
 
-// 分割路径 "/a/b" -> 依次查找
 static int resolve_parent(const char* path, uint32_t* out_parent_ino, const char** out_basename){
-    // 路径必须以 '/' 开头；根目录 "/" 的 parent 视为自己
     if(!path || path[0] != '/') return -1;
 
-    // 跳过连续 '/'
     unsigned i=0; while(path[i]=='/') i++;
-    if(path[i]==0){ // 根目录
+    if(path[i]==0){
         *out_parent_ino = 1; *out_basename = "/"; return 0;
     }
 
-    // 找最后一个组件名（basename）
     int last_slash = -1;
     for(unsigned j=i; path[j]; j++){
         if(path[j]=='/') last_slash = (int)j;
     }
     const char* basename = (last_slash==-1)? path+i : path+last_slash+1;
 
-    // 父目录前缀
     char temp[256];
     if((unsigned)strlen(path) >= sizeof(temp)) return -1;
     memset(temp, 0, sizeof(temp));
     memcpy(temp, path, last_slash==-1 ? i : (unsigned)(last_slash));
 
-    // 从根遍历
     uint32_t cur = 1;
     struct fs_inode ino;
     if(inode_read(cur, &ino)!=0) return -1;
 
-    unsigned p=1; // 已经跳过第一个 '/'
+    unsigned p=1;
     while(temp[p]){
-        // 取下一个组件
         while(temp[p]=='/') p++;
         if(!temp[p]) break;
         char name[FS_NAME_MAX]; unsigned k=0;
@@ -229,7 +216,6 @@ static int resolve_parent(const char* path, uint32_t* out_parent_ino, const char
         }
         name[k]=0;
 
-        // 在 cur 目录中查找
         if(ino.type != FS_IT_DIR) return -1;
         struct fs_dirent de; uint32_t b,iidx;
         if(dir_find_entry(&ino, name, &de, &b, &iidx)!=0) return -1;
@@ -256,7 +242,7 @@ int fs_mount(void){
 
 int fs_format(uint64_t total_sectors){
     uint32_t total_blocks = (uint32_t)(total_sectors / FS_SECTORS_PER_BLK);
-    if(total_blocks < 64) return -1; // 太小
+    if(total_blocks < 64) return -1;
 
     // superblock
     memset(&g_sb, 0, sizeof(g_sb));
@@ -264,20 +250,18 @@ int fs_format(uint64_t total_sectors){
     g_sb.blk_size = FS_BLOCK_SIZE;
     g_sb.total_blocks = total_blocks;
     g_sb.inode_map_block = 2;
-    g_sb.data_map_block  = 3;  // 当前实现只用 1 块数据位图
+    g_sb.data_map_block  = 3;
     g_sb.inode_table_start = 4;
     g_sb.inode_table_blocks = FS_INODE_TABLE_BLKS; // 32
     g_sb.data_start_block = g_sb.inode_table_start + g_sb.inode_table_blocks;
     g_sb.max_inodes = FS_MAX_INODES;
     g_sb.root_ino = 1;
 
-    // 写 super
     unsigned char buf[FS_BLOCK_SIZE];
     memset(buf, 0, sizeof(buf));
     memcpy(buf, &g_sb, sizeof(g_sb));
     if(fs_write_block(1, buf)!=0) return -1;
 
-    // 清空位图、inode 表、数据区起始若干块
     memset(buf, 0, sizeof(buf));
     if(fs_write_block(g_sb.inode_map_block, buf)!=0) return -1;
     if(fs_write_block(g_sb.data_map_block,  buf)!=0) return -1;
@@ -309,21 +293,17 @@ int fs_mount_or_mkfs(uint64_t total_sectors){
     return fs_mount();
 }
 
-/* ===== 基本操作：mkdir / touch / ls ===== */
-
 static int create_empty(const char* path, int as_dir){
     if(!g_mounted) return -1;
 
     uint32_t pino; const char* name;
     if(resolve_parent(path, &pino, &name)!=0) return -1;
-    if(strcmp(name, "/")==0) return -1; // 不允许对根操作
+    if(strcmp(name, "/")==0) return -1;
 
-    // 父目录必须存在
     struct fs_inode parent;
     if(inode_read(pino, &parent)!=0) return -1;
     if(parent.type != FS_IT_DIR) return -1;
 
-    // 已存在则直接返回
     struct fs_dirent exist;
     if(dir_find_entry(&parent, name, &exist, 0,0)==0){
         struct fs_inode tmp;
@@ -333,7 +313,6 @@ static int create_empty(const char* path, int as_dir){
         return 0;
     }
 
-    // 分配新 inode
     uint32_t cino;
     if(alloc_inode(&cino)!=0) return -1;
 
@@ -345,7 +324,6 @@ static int create_empty(const char* path, int as_dir){
     node.nblocks = 0;
     if(inode_write(cino, &node)!=0){ free_inode(cino); return -1; }
 
-    // 加到父目录
     if(dir_add_entry(&parent, pino, name, cino)!=0){
         free_inode(cino); return -1;
     }
@@ -358,14 +336,11 @@ int fs_touch(const char* path){ return create_empty(path, /*as_dir=*/0); }
 int fs_ls(const char* path){
     if(!g_mounted) return -1;
 
-    // 解析到目标目录（或文件所在目录并打印那个文件）
     if(!path || path[0]==0) path = "/";
 
-    // 根目录快捷
     uint32_t ino_id = 1;
     struct fs_inode ino;
     if(strcmp(path, "/")!=0){
-        // 先找到父，再找 basename
         uint32_t pino; const char* name;
         if(resolve_parent(path, &pino, &name)!=0) return -1;
         struct fs_inode parent;
@@ -385,7 +360,6 @@ int fs_ls(const char* path){
         return 0;
     }
 
-    // 目录：列出全部非 0 项
     unsigned char buf[FS_BLOCK_SIZE];
     for(uint32_t b=0;b<ino.nblocks && b<10;b++){
         if(ino.direct[b]==0) continue;
@@ -393,7 +367,6 @@ int fs_ls(const char* path){
         struct fs_dirent* de = (struct fs_dirent*)buf;
         for(uint32_t i=0;i<FS_DIRENTS_PER_BLK;i++){
             if(de[i].ino){
-                // 简单打印名字（已 '\0' 终止）
                 kprintf("%s\r\n", de[i].name);
             }
         }

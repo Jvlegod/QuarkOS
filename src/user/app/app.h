@@ -6,7 +6,7 @@
 void app1_entry(void *arg);
 
 static struct shell_app app_table[] = {
-    {"app1", app1_entry, "example1"},
+    {"app1", app1_entry, "example"},
     {NULL, NULL, NULL}
 };
 

@@ -7,6 +7,7 @@
 #include "interrupt.h"
 #include "lock.h"
 #include "virtio.h"
+#include "fs.h"
 void start_kernel(void)
 {
 	uart_init();
@@ -15,8 +16,17 @@ void start_kernel(void)
 	timer_init();
 	mem_init((uintptr_t)_heap_start, (uintptr_t)_heap_end);
 	mem_test();
-	virtio_blk_init();
-	blk_read_write_test();
+	if (virtio_blk_init() != 0) {
+        kprintf("[BOOT] virtio blk init failed!\r\n");
+        while (1);
+    }
+	blk_test();
+    uint64_t total_sectors = virtio_capacity_sectors();
+    if (fs_mount_or_mkfs(total_sectors) != 0) {
+        kprintf("[BOOT] fs mount_or_mkfs failed!\r\n");
+        while (1);
+    }
+	fs_test();
 	// task init should after uart and mem.
 	int hartid = read_tp();
 	task_init(hartid);

@@ -22,5 +22,6 @@ void memcpy(void *dest, const void *src, size_t n);
 int vsnprintf(char* buf, size_t size, const char* fmt, va_list ap);
 int snprintf(char* buf, size_t size, const char* fmt, ...);
 int is_digit(char c);
+char *strstr(const char *haystack, const char *needle);
 
 #endif // __CSTDLIB_H__

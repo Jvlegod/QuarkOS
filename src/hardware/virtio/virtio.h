@@ -89,6 +89,10 @@ struct virtq_used {
 } __attribute__((packed));
 
 static volatile uint8_t *mmio = (volatile uint8_t*)VIRTIO_MMIO_BASE;
+
+static inline uint8_t r8(volatile uint8_t* p){ uint8_t v = *p; barrier(); return v; }
+static inline void    w8(volatile uint8_t* p, uint8_t v){ *p = v; barrier(); }
+
 static inline void w32(volatile void *a, uint32_t v){ *(volatile uint32_t*)a = v; barrier(); }
 static inline uint32_t r32(volatile void *a){ uint32_t v = *(volatile uint32_t*)a; barrier(); return v; }
 static inline void wr64(volatile uint8_t *base, uint32_t off_low, uint64_t val){

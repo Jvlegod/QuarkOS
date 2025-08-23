@@ -6,6 +6,6 @@
 void main(void *arg) {
     desktop_init();
     desktop_show_init();
-    
+
     shell_main();
 }

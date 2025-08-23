@@ -279,3 +279,18 @@ int snprintf(char* buf, size_t size, const char* fmt, ...) {
 int is_digit(char c) {
     return (c >= '0' && c <= '9');
 }
+
+char *strstr(const char *haystack, const char *needle) {
+    if (!*needle) return (char *)haystack;
+
+    for (; *haystack; haystack++) {
+        const char *h = haystack;
+        const char *n = needle;
+        while (*h && *n && (*h == *n)) {
+            h++;
+            n++;
+        }
+        if (*n == '\0') return (char *)haystack;
+    }
+    return NULL;
+}

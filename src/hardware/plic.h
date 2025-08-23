@@ -2,6 +2,8 @@
 #define __PLIC_H__
 #include "platform.h"
 
+#define KBD_IRQ 2
+#define TABLET_IRQ 3
 #define UART0_IRQ 10
 
 #define MIE_MEIE (1 << 11) // external

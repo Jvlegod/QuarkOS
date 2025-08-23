@@ -1,5 +1,5 @@
-#ifndef __FONTS_H__
-#define __FONTS_H__
+#ifndef __UI_FONTS_H__
+#define __UI_FONTS_H__
 #include "ktypes.h"
 
 static const uint8_t g_font6x8[95][6] = {

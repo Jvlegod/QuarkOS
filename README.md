@@ -4,7 +4,7 @@
 
 ### 1.1 Graph
 
-![alt text](assets/README/image.png)
+![alt text](assets/README/image.jpg)
 
 ### 1.2 Terminal
 

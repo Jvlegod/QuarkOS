@@ -3,6 +3,7 @@
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
 #include "cstdlib.h"
+#include "debug.h"
 
 #define KBD_MMIO_BASE    0x10002000u
 #define TABLET_MMIO_BASE 0x10003000u
@@ -184,19 +185,18 @@ void virtio_input_handle_irq(virtio_input_dev_t* dev)
 }
 
 static void on_key(void* u, uint16_t key, int pressed) {
-    kprintf("[kbd] key=%u %s\n", key, pressed ? "down" : "up");
+    LOG_DEBUG("[kbd] key=%u %s\n", key, pressed ? "down" : "up");
 }
 static void on_abs(void* u, int code, int val) {
     if (code == ABS_X || code == ABS_Y) {
-        kprintf("[tab] %s=%d\n", (code==ABS_X)?"X":"Y", val);
+        LOG_DEBUG("[tab] %s=%d\n", (code==ABS_X)?"X":"Y", val);
     }
 }
 static void on_btn(void* u, int code, int pressed) {
-    kprintf("[tab] BTN %d %s\n", code, pressed?"down":"up");
+    LOG_DEBUG("[tab] BTN %d %s\n", code, pressed?"down":"up");
 }
 static void on_syn(void* u) {
-    /* 一批事件结束，可在这里刷新光标到 g_tab.x/g_tab.y */
-    // desktop_set_cursor(g_tab.x, g_tab.y);
+    /* TODO */
 }
 
 void input_init_all() {

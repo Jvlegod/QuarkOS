@@ -12,6 +12,7 @@
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
 #include "fs.h"
+#include "debug.h"
 
 void start_kernel(void)
 {
@@ -22,18 +23,18 @@ void start_kernel(void)
 	mem_init((uintptr_t)_heap_start, (uintptr_t)_heap_end);
 	mem_test();
 	if (virtio_blk_init() != 0) {
-        kprintf("[BOOT] virtio blk init failed!\r\n");
+        LOG_ERROR("[BOOT] virtio blk init failed!\r\n");
         while (1);
     }
 	blk_test();
     uint64_t total_sectors = virtio_capacity_sectors();
     if (fs_mount_or_mkfs(total_sectors) != 0) {
-        kprintf("[BOOT] fs mount_or_mkfs failed!\r\n");
+        LOG_ERROR("[BOOT] fs mount_or_mkfs failed!\r\n");
         while (1);
     }
 	fs_test();
     if (gfx_init() != 0) {
-		kprintf("[BOOT] gfx(virtio gpu) init failed!\r\n");
+		LOG_ERROR("[BOOT] gfx(virtio gpu) init failed!\r\n");
         while (1);
     }
 	gpu_test();

@@ -6,6 +6,7 @@
 #include "virtio_input.h"
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
+#include "debug.h"
 
 #define DESKTOP_MAX_WINS 16
 #define DESKTOP_TASKBAR_H 28

@@ -616,8 +616,8 @@ void desktop_pointer_abs(uint32_t x, uint32_t y, unsigned buttons)
         s_drag_idx = -1;
     }
 
-    if (down & DESK_BTN_RIGHT) kprintf("[desktop] RMB down @(%u,%u)\n", x, y);
-    if (down & DESK_BTN_MID)   kprintf("[desktop] MMB down @(%u,%u)\n", x, y);
+    if (down & DESK_BTN_RIGHT) LOG_DEBUG("[desktop] RMB down @(%u,%u)\n", x, y);
+    if (down & DESK_BTN_MID)   LOG_DEBUG("[desktop] MMB down @(%u,%u)\n", x, y);
 
     s_btn_state = now;
 }
@@ -633,7 +633,7 @@ void desktop_pointer_rel(int dx, int dy, int wheel, unsigned buttons)
     desktop_pointer_abs((uint32_t)nx, (uint32_t)ny, buttons);
 
     if (wheel) {
-        kprintf("[desktop] wheel %+d @(%d,%d)\n", wheel, nx, ny);
+        LOG_DEBUG("[desktop] wheel %+d @(%d,%d)\n", wheel, nx, ny);
     }
 }
 

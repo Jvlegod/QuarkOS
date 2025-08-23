@@ -4,6 +4,7 @@
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
 #include "desktop.h"
+#include "debug.h"
 
 extern virtio_kbd_t    g_kbd;
 extern virtio_tablet_t g_tab;
@@ -43,7 +44,7 @@ void handler_plic() {
         virtio_tablet_irq(&g_tab);
         desktop_poll_cursor(&g_tab);
     } else if (irq) {
-        kprintf("unexpected interrupt irq = %d\r\n", irq);
+        LOG_ERROR("unexpected interrupt irq = %d\r\n", irq);
     }
 
     if (irq) {

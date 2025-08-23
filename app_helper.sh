@@ -51,12 +51,22 @@ exists_in_header() {
 }
 
 insert_prototype() {
-  local pat='^[[:space:]]*static[[:space:]]+struct[[:space:]]+shell_app[[:space:]]+app_table\['
-  if grep -Eq "$pat" "$APP_H"; then
-    sedi "/$pat/i void ${APP}_entry(void *arg);" "$APP_H"
+  # 先找最后一个 *_entry(void *arg); 声明
+  local last_decl
+  last_decl=$(grep -n "void[[:space:]]\+[a-zA-Z0-9_]\+_entry[[:space:]]*(void[[:space:]]*\*arg)[[:space:]]*;" "$APP_H" | tail -n1 | cut -d: -f1 || true)
+
+  if [[ -n "$last_decl" ]]; then
+    # 插在最后一个声明行的后面
+    sedi "$((last_decl+1))i void ${APP}_entry(void *arg);" "$APP_H"
   else
-    echo "ERROR: cannot find 'static struct shell_app app_table[]' in $APP_H"
-    exit 6
+    # 否则退而求其次，插在 app_table 定义之前
+    local pat='^[[:space:]]*static[[:space:]]+struct[[:space:]]+shell_app[[:space:]]+app_table\['
+    if grep -Eq "$pat" "$APP_H"; then
+      sedi "/$pat/i void ${APP}_entry(void *arg);" "$APP_H"
+    else
+      echo "ERROR: cannot find insert position in $APP_H"
+      exit 6
+    fi
   fi
 }
 
@@ -105,7 +115,9 @@ create_source() {
     exit 5
   fi
   cat > "$SRC" <<EOF
+#include "shell.h"
 #include "app.h"
+
 void ${APP}_entry(void *arg) {
     SHELL_PRINTF("${APP} running!\\r\\n");
     return;
@@ -147,3 +159,5 @@ del)
   usage
   ;;
 esac
+
+eval "make clean"

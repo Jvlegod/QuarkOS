@@ -12,6 +12,8 @@
 
 ## 2 Usage
 
+### 2.1 Add by your self
+
 step1: add your app in `app/app.h`
 
 ```c
@@ -33,6 +35,18 @@ step2: code in dir `app/`, such as `app.c`.
 void app1_entry(void *arg) {
     SHELL_PRINTF("App1 running!\r\n");
 }
+```
+
+### 2.2 Add by script
+
+```bash
+./app_helper add <app_name>
+```
+
+you can also delete the app
+
+```bash
+./app_helper del <app_name>
 ```
 
 ## 3 Debug

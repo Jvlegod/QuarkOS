@@ -650,6 +650,7 @@ static desk_window_t s_win_about = {
     .title       = "About",
 };
 
+// open a window
 static void start_launch_window(void* user) {
     if (!user) return;
     const desk_window_t* tpl = (const desk_window_t*)user;
@@ -692,10 +693,6 @@ void desktop_show_init (void) {
     desktop_startmenu_add("Welcome",  start_launch_window, (void*)&s_win_welcome);
     desktop_startmenu_add("Settings", start_launch_window, (void*)&s_win_settings);
     desktop_startmenu_add("About",    start_launch_window, (void*)&s_win_about);
-
-    start_launch_window((void*)&s_win_welcome);
-    start_launch_window((void*)&s_win_settings);
-    start_launch_window((void*)&s_win_about);
 }
 
 void desktop_app_init() {

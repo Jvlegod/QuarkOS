@@ -69,5 +69,7 @@ void task_int_yield();
 void task_yield();
 void schedule();
 void task_exit();
+const struct task* task_get_tasks(void);
+int task_get_count(void);
 
 #endif /* __TASK_H__ */

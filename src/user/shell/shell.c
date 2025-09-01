@@ -28,6 +28,7 @@ static struct shell_command cmd_table[] = {
     {"ed",     cmd_ed,     "Quark editor"},
     {"rm",     cmd_rm,     "remove file/dir"},
     {"clear",  cmd_clear,  "clear the screen"},
+    {"ps",     cmd_ps,     "list tasks"},
     {NULL, NULL, NULL}
 };
 
@@ -81,6 +82,30 @@ int cmd_cd(int argc, char** argv) {
 }
 int cmd_pwd(int argc, char** argv) {
     SHELL_PRINTF("%s\r\n", fs_get_cwd());
+    return 0;
+}
+
+int cmd_ps(int argc, char **argv) {
+    const struct task *tasks = task_get_tasks();
+    int count = task_get_count();
+    SHELL_PRINTF("ID   STATUS\r\n");
+    for (int i = 0; i < count; i++) {
+        const struct task *t = &tasks[i];
+        if (t->status == TASK_UNCREATE) {
+            continue;
+        }
+        const char *state = "UNKNOWN";
+        switch (t->status) {
+            case TASK_UNCREATE: state = "UNCREATE"; break;
+            case TASK_CREATE: state = "CREATE"; break;
+            case TASK_READY: state = "READY"; break;
+            case TASK_RUNNING: state = "RUNNING"; break;
+            case TASK_BLOCKED: state = "BLOCKED"; break;
+            case TASK_SLEEPING: state = "SLEEPING"; break;
+            case TASK_ZOMBIE: state = "ZOMBIE"; break;
+        }
+        SHELL_PRINTF("%d   %s\r\n", t->task_id, state);
+    }
     return 0;
 }
 

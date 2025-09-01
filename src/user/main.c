@@ -2,6 +2,7 @@
 #include "ktypes.h"
 #include "shell.h"
 #include "desktop.h"
+#include "task.h"
 
 void main(void *arg) {
     desktop_init();

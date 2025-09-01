@@ -136,3 +136,11 @@ void task_yield() {
         :: "r"(old), "r"(new)
     );
 }
+
+const struct task* task_get_tasks(void) {
+    return tasks;
+}
+
+int task_get_count(void) {
+    return task_count;
+}

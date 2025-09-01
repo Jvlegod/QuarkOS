@@ -4,8 +4,6 @@
 #include "kprintf.h"
 #include "gfx.h"
 
-static void bzero(void* p,size_t n){ unsigned char* d=p; while(n--)*d++=0; }
-
 enum { VIRTIO_ID_GPU = 16 };
 enum {
     VIRTIO_GPU_CMD_GET_DISPLAY_INFO        = 0x0100,

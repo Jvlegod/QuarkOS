@@ -1,5 +1,9 @@
 # QuarkOS
 
+<p align="center">
+  <img src="docs/QuarkOS.png" alt="QuarkOS Logo" width="200"/>
+</p>
+
 ## 1 Graph SUPPORT
 
 ### 1.1 Graph
@@ -12,7 +16,9 @@
 
 ## 2 Usage
 
-### 2.1 Add by your self
+### 2.1 App
+
+#### 2.1.1 Add by your self
 
 step1: add your app in `app/app.h`
 
@@ -37,7 +43,7 @@ void app1_entry(void *arg) {
 }
 ```
 
-### 2.2 Add by script
+#### 2.1.2 Add by script
 
 ```bash
 ./app_helper add <app_name>
@@ -48,6 +54,16 @@ you can also delete the app
 ```bash
 ./app_helper del <app_name>
 ```
+
+#### 2.1.3 Desktop App
+
+You can see public api in user/ui/desktop `apps`.
+
+for example, you just do same as `app3`.
+
+we also support app logo generation.
+
+you can use `src/tools/icon2c.py` to finish it.
 
 ## 3 Debug
 

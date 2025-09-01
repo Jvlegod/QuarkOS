@@ -220,6 +220,16 @@ static void bring_to_front(int idx){
     for (int i = idx; i < s_nwins-1; ++i) s_wins[i] = s_wins[i+1];
     s_wins[s_nwins-1] = w;
     if (s_drag_idx == idx) s_drag_idx = s_nwins-1;
+    else if (s_drag_idx > idx) s_drag_idx--;
+
+    for (int i = 0; i < s_nbtns; ++i) {
+        if (s_btns[i].win == idx) s_btns[i].win = s_nwins-1;
+        else if (s_btns[i].win > idx) s_btns[i].win--;
+    }
+    for (int i = 0; i < s_ntaskbar_apps; ++i) {
+        if (s_taskbar_apps[i].win == idx) s_taskbar_apps[i].win = s_nwins-1;
+        else if (s_taskbar_apps[i].win > idx) s_taskbar_apps[i].win--;
+    }
 }
 
 /* =========================
@@ -305,6 +315,34 @@ static start_item_t s_start_items[START_MAX];
 static int          s_start_count = 0;
 static int          s_start_open  = 0;
 
+int desktop_taskbar_add(int win, const char* label, const uint32_t* icon,
+                        desk_app_cb cb, void* user){
+    if (s_ntaskbar_apps >= DESKTOP_MAX_TASKBAR) return -1;
+    s_taskbar_apps[s_ntaskbar_apps] = (desk_app_t){0, 0, win, label, icon, cb, user};
+    return s_ntaskbar_apps++;
+}
+
+static int hit_taskbar_icon(int x, int y){
+    for (int i=s_ntaskbar_apps-1; i>=0; --i){
+        const desk_app_t* a = &s_taskbar_apps[i];
+        if (x >= (int)a->x && x < (int)(a->x + TASKBAR_ICON_W) &&
+            y >= (int)a->y && y < (int)(a->y + TASKBAR_ICON_H))
+            return i;
+    }
+    return -1;
+}
+
+static void draw_taskbar_icon(const desk_app_t* a){
+    if (a->icon) {
+        gfx_blit_bgra32(a->icon, TASKBAR_ICON_W, TASKBAR_ICON_H, a->x, a->y);
+    } else {
+        gfx_fill_rect(a->x, a->y, TASKBAR_ICON_W, TASKBAR_ICON_H, desktop_color(0xE0,0xE0,0xE0));
+        desktop_draw_rect(a->x, a->y, TASKBAR_ICON_W, TASKBAR_ICON_H, desktop_color(0,0,0));
+        if (a->label && a->label[0])
+            desktop_draw_char_6x8(a->x + 8, a->y + (TASKBAR_ICON_H-8)/2, a->label[0], desktop_color(0,0,0));
+    }
+}
+
 int desktop_startmenu_add(const char* label, desk_menu_cb cb, void* user){
     if (s_start_count >= START_MAX) return -1;
     s_start_items[s_start_count] = (start_item_t){ label, cb, user };
@@ -340,6 +378,47 @@ static int hit_start_menu(int x, int y){
     return idx;
 }
 
+// Apps
+int desktop_add_app(uint32_t x, uint32_t y, const char* label,
+                    const uint32_t* icon, desk_app_cb cb, void* user)
+{
+    if (s_napps >= DESKTOP_MAX_APPS) return -1;
+    s_apps[s_napps] = (desk_app_t){ x, y, -1, label, icon, cb, user };
+    int idx = s_napps++;
+    desktop_redraw_full();
+    return idx;
+}
+
+
+static void draw_app_icon(const desk_app_t* a)
+{
+    if (a->icon) {
+        gfx_blit_bgra32(a->icon, APP_ICON_W, APP_ICON_H, a->x, a->y);
+    } else {
+        gfx_fill_rect(a->x, a->y, APP_ICON_W, APP_ICON_H, desktop_color(0xE0,0xE0,0xE0));
+        desktop_draw_rect(a->x, a->y, APP_ICON_W, APP_ICON_H, desktop_color(0,0,0));
+    }
+    desktop_draw_text_6x8(a->x+2, a->y+APP_ICON_H+2, a->label, desktop_color(0,0,0));
+}
+
+static void draw_all_apps(void)
+{
+    for (int i=0; i<s_napps; ++i)
+        draw_app_icon(&s_apps[i]);
+}
+
+static int hit_app_icon(int x, int y)
+{
+    for (int i=s_napps-1; i>=0; --i){
+        const desk_app_t* a = &s_apps[i];
+        if (x >= (int)a->x && x < (int)(a->x + APP_ICON_W) &&
+            y >= (int)a->y && y < (int)(a->y + APP_ICON_H))
+            return i;
+    }
+    return -1;
+}
+
+
 static void desktop_draw_taskbar (void) {
     uint32_t W = gfx_width();
     gfx_fill_rect (0, 0, W, DESKTOP_TASKBAR_H, desktop_color (0x90, 0x90, 0x30));
@@ -347,23 +426,21 @@ static void desktop_draw_taskbar (void) {
 
     gfx_fill_rect (6, 4, 54, DESKTOP_TASKBAR_H - 8, desktop_color (0x40, 0x80, 0xF0));
     desktop_draw_text_6x8 (12, 9, "Start", desktop_color (0x00, 0x00, 0x00));
+
+
+    int x = 70;
+    int y = (DESKTOP_TASKBAR_H - TASKBAR_ICON_H) / 2;
+    for (int i = 0; i < s_ntaskbar_apps; ++i) {
+        s_taskbar_apps[i].x = (uint32_t)x;
+        s_taskbar_apps[i].y = (uint32_t)y;
+        draw_taskbar_icon(&s_taskbar_apps[i]);
+        x += TASKBAR_ICON_W + 4;
+    }
 }
 
 /* =========================
  * 窗口
  * ========================= */
-
-/* ====== 窗口内按钮控件 ====== */
-#define DESKTOP_MAX_BTNS 64
-typedef struct {
-    int win; uint32_t x,y,w,h;
-    const char* label; uint32_t color;
-    desk_button_cb cb; void* user;
-    int visible;
-} desk_button_t;
-
-static desk_button_t s_btns[DESKTOP_MAX_BTNS];
-static int           s_nbtns = 0;
 
 static int text_width_6x8(const char* s){ int n=0; while(s && s[n]) n++; return n*6; }
 
@@ -485,6 +562,7 @@ static void desktop_draw_window (const desk_window_t * w) {
 
 static void desktop_redraw_all (void) {
     desktop_draw_wallpaper();
+    draw_all_apps();
     desktop_draw_taskbar();
     for (int i = 0; i < s_nwins; ++i) {
         desktop_draw_window(&s_wins[i]);
@@ -574,12 +652,30 @@ static desk_window_t s_win_about = {
 
 static void start_launch_window(void* user) {
     if (!user) return;
-    const desk_window_t* win = (const desk_window_t*)user;
-    desk_window_t tmp = *win;
-    if (tmp.x == 0 && win == &s_win_about) {
+    const desk_window_t* tpl = (const desk_window_t*)user;
+
+    int tbid = -1;
+    for (int i = 0; i < s_ntaskbar_apps; ++i) {
+        if (s_taskbar_apps[i].user == user) { tbid = i; break; }
+    }
+
+    if (tbid >= 0 && s_taskbar_apps[tbid].win >= 0) {
+        bring_to_front(s_taskbar_apps[tbid].win);
+        desktop_redraw_full();
+        return;
+    }
+
+    desk_window_t tmp = *tpl;
+    if (tmp.x == 0 && tpl == &s_win_about) {
         tmp.x = gfx_width() - tmp.w - 20;
     }
-    desktop_add_window(&tmp);
+    int idx = desktop_add_window(&tmp);
+    if (tbid >= 0) {
+        s_taskbar_apps[tbid].win = idx;
+    } else {
+        desktop_taskbar_add(idx, tpl->title, NULL, start_launch_window, user);
+    }
+    desktop_redraw_full();
 }
 
 void desktop_show_init (void) {
@@ -600,6 +696,10 @@ void desktop_show_init (void) {
     start_launch_window((void*)&s_win_welcome);
     start_launch_window((void*)&s_win_settings);
     start_launch_window((void*)&s_win_about);
+}
+
+void desktop_app_init() {
+    // you can put your app here, if you want to init it by init.
 }
 
 void desktop_poll_keyboard(virtio_kbd_t* g_kbd) {
@@ -649,12 +749,25 @@ void desktop_pointer_abs(uint32_t x, uint32_t y, unsigned buttons)
 
 
     if (down & DESK_BTN_LEFT) {
+        int appid = hit_app_icon((int)x,(int)y);
+        if (appid >= 0) {
+            if (s_apps[appid].cb) s_apps[appid].cb(s_apps[appid].user);
+            s_btn_state = now;
+            return;
+        }
         for (int i=s_nwins-1; i>=0; --i){
             if (hit_close_btn((int)x,(int)y,&s_wins[i])) {
                 desktop_close_window(i);
                 s_btn_state = now;
                 return;
             }
+        }
+
+        int tbid = hit_taskbar_icon((int)x,(int)y);
+        if (tbid >= 0) {
+            if (s_taskbar_apps[tbid].cb) s_taskbar_apps[tbid].cb(s_taskbar_apps[tbid].user);
+            s_btn_state = now;
+            return;
         }
 
         for (int i=s_nwins-1; i>=0; --i){
@@ -737,5 +850,27 @@ void desktop_close_window(int idx)
     s_nwins--;
     if (s_drag_idx == idx) s_drag_idx = -1;
     else if (s_drag_idx > idx) s_drag_idx--;
+
+    for (int i = 0; i < s_nbtns;) {
+        if (s_btns[i].win == idx) {
+            for (int j = i; j < s_nbtns-1; ++j) s_btns[j] = s_btns[j+1];
+            s_nbtns--;
+            continue;
+        }
+        if (s_btns[i].win > idx) s_btns[i].win--;
+        ++i;
+    }
+
+    for (int i = 0; i < s_ntaskbar_apps;) {
+        if (s_taskbar_apps[i].win == idx) {
+            for (int j = i; j < s_ntaskbar_apps-1; ++j) s_taskbar_apps[j] = s_taskbar_apps[j+1];
+            s_ntaskbar_apps--;
+            continue;
+        }
+        if (s_taskbar_apps[i].win > idx) s_taskbar_apps[i].win--;
+        ++i;
+    }
+
+
     desktop_redraw_full();
 }

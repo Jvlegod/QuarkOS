@@ -109,6 +109,7 @@
         "cstdbool": "c",
         "version": "c",
         "desktop.h": "c",
-        "virtio_input.h": "c"
+        "virtio_input.h": "c",
+        "user.h": "c"
     }
 }

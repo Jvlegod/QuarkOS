@@ -12,7 +12,7 @@ static int find_free_slot() {
     return -1;
 }
 
-int user_create(const char *name, const char *password, int uid) {
+int user_create(const char *name, const char *password, uid_t uid) {
     int idx = find_free_slot();
     if (idx < 0) {
         return -1;
@@ -25,7 +25,7 @@ int user_create(const char *name, const char *password, int uid) {
     return 0;
 }
 
-int user_auth(const char *name, const char *password, int *uid) {
+int user_auth(const char *name, const char *password, uid_t *uid) {
     for (int i = 0; i < MAX_USERS; i++) {
         if (strncmp(user_table[i].name, name, USER_NAME_MAX) == 0 &&
             strncmp(user_table[i].password, password, USER_PASS_MAX) == 0) {
@@ -36,4 +36,18 @@ int user_auth(const char *name, const char *password, int *uid) {
         }
     }
     return -1;
+}
+
+long getuid(void)
+{
+    return syscall(SYS_GETUID, 0, 0, 0, 0, 0, 0);
+}
+
+int setuid(uid_t uid)
+{
+    long ret = syscall(SYS_SETUID, uid, 0, 0, 0, 0, 0);
+    if (ret < 0) {
+        return -1;
+    }
+    return 0;
 }

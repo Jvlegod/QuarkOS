@@ -33,7 +33,7 @@ static inline uint64_t* get_user_stack(int task_id) {
 
 // idle task
 static void idle_task() {
-    task_create(main, (void *)NULL);
+    task_create(main, (void *)NULL, 0);
 
     while(1) {
         __asm__ volatile ("wfi");
@@ -51,13 +51,15 @@ static void init_idle_task(int hartid) {
     // MPIE = 1
     // MPP = 3 (Machine mode)
     idle->ctx.mstatus = 0x1880;
-    idle->ctx.mepc = (uint64_t)idle_task ;
+    idle->ctx.mepc = (uint64_t)idle_task;
+    idle->uid = 0;
 }
 
 void task_init(int hartid) {
 
     for (int i = 0; i < MAX_TASKS; i ++) {
         tasks[i].status = TASK_UNCREATE;
+        tasks[i].uid = 0;
     }
 
     init_idle_task(hartid);
@@ -66,11 +68,12 @@ void task_init(int hartid) {
     ctx_int_switch(&tasks[hartid].ctx);
 }
 
-void task_create(void (*entry)(void*), void *arg) {
+void task_create(void (*entry)(void*), void *arg, int uid) {
     if(task_count >= MAX_TASKS) return;
 
     struct task *t = &tasks[task_count++];
     t->task_id = task_count;
+    t->uid = uid;
     t->status = TASK_CREATE;
 
     uint64_t *sp = get_user_stack(task_count);
@@ -143,4 +146,12 @@ const struct task* task_get_tasks(void) {
 
 int task_get_count(void) {
     return task_count;
+}
+
+int task_get_current_uid(void) {
+    return tasks[current_task].uid;
+}
+
+void task_set_current_uid(int uid) {
+    tasks[current_task].uid = uid;
 }

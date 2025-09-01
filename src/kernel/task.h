@@ -60,16 +60,19 @@ enum task_state {
 struct task {
     struct context ctx;        // task context
     int task_id;
+    int uid;
     enum task_state status;
 };
 
 void task_init(int hart_id);
-void task_create(void (*entry)(void*), void *arg);
+void task_create(void (*entry)(void*), void *arg, int uid);
 void task_int_yield();
 void task_yield();
 void schedule();
 void task_exit();
 const struct task* task_get_tasks(void);
 int task_get_count(void);
+int task_get_current_uid(void);
+void task_set_current_uid(int uid);
 
 #endif /* __TASK_H__ */

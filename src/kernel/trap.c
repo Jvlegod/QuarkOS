@@ -4,15 +4,7 @@
 #include "trap.h"
 #include "hwtimer.h"
 #include "debug.h"
-
-/*
- * a7: syscall number
- * a0~a6: parameters
- */
-static void handle_syscall() {
-    while(1) {
-    }
-}
+#include "syscall.h"
 
 static void handle_illegal_instruction() {
     while(1) {
@@ -33,12 +25,10 @@ static uint64_t handle_interrupt(uint64_t cause, uint64_t epc) {
     }
     return epc;
 }
-static uint64_t handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval) {
+static uint64_t handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval, struct context *ctx) {
     switch (cause) {
         case MCAUSE_ECALL_U_MODE:
-            uint64_t ext_id = 0; // TODO?
-            uint64_t func_id = 0; // TODO?
-            handle_syscall(ext_id, func_id);
+            handle_syscall(ctx);
             epc += 4;
             break;
             
@@ -66,7 +56,7 @@ void handler_trap(struct context *ctx) {
     if (MCAUSE_IS_INTERRUPT(cause)) {
         epc = handle_interrupt(cause, epc);
     } else {
-        epc = handle_exception(cause, epc, mtval);
+        epc = handle_exception(cause, epc, mtval, ctx);
     }
 
     write_csr(mepc, epc);

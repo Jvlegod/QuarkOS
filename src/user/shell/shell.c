@@ -4,8 +4,11 @@
 #include "task.h"
 #include "fs.h"
 #include "editor.h"
+#include "user.h"
 
 #define MAX_ARGC 8
+#define SHELL_EXIT 1
+
 static char shell_buf[RING_BUF_SIZE];
 const char *OS_ART[] = {
     " ██████  ██    ██  █████  ██████  ██   ██  ██████  ███████ ",
@@ -29,6 +32,9 @@ static struct shell_command cmd_table[] = {
     {"rm",     cmd_rm,     "remove file/dir"},
     {"clear",  cmd_clear,  "clear the screen"},
     {"ps",     cmd_ps,     "list tasks"},
+    {"login",  cmd_login,  "login user"},
+    {"su",     cmd_su,     "switch user"},
+    {"logout", cmd_logout, "logout"},
     {NULL, NULL, NULL}
 };
 
@@ -108,6 +114,40 @@ int cmd_ps(int argc, char **argv) {
     }
     return 0;
 }
+
+static int do_login(const char *name, const char *password) {
+    uid_t uid;
+    if (user_auth(name, password, &uid) != 0) {
+        SHELL_PRINTF("auth failed\r\n");
+        return -1;
+    }
+    uid_t old = getuid();
+    setuid(uid);
+    shell_main();
+    setuid(old);
+    return 0;
+}
+
+int cmd_login(int argc, char **argv) {
+    if (argc < 3) {
+        SHELL_PRINTF("usage: login <user> <password>\r\n");
+        return -1;
+    }
+    return do_login(argv[1], argv[2]);
+}
+
+int cmd_su(int argc, char **argv) {
+    if (argc < 3) {
+        SHELL_PRINTF("usage: su <user> <password>\r\n");
+        return -1;
+    }
+    return do_login(argv[1], argv[2]);
+}
+
+int cmd_logout(int argc, char **argv) {
+    return SHELL_EXIT;
+}
+
 
 int cmd_start(int argc, char **argv) {
     if (argc < 2) {
@@ -208,7 +248,10 @@ void shell_main() {
         struct shell_command *cmd;
         for (cmd = cmd_table; cmd->name != NULL; cmd++) {
             if (strcmp(argv[0], cmd->name) == 0) {
-                cmd->handler(argc, argv);
+                int rc = cmd->handler(argc, argv);
+                if (rc == SHELL_EXIT) {
+                    return;
+                }
                 break;
             }
         }

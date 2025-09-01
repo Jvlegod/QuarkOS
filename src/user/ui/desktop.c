@@ -8,12 +8,80 @@
  * 工具与通用
  * ========================= */
 
-static inline uint32_t desktop_color (uint8_t b, uint8_t g, uint8_t r) {
-    return (uint32_t) b | ((uint32_t) g << 8) | ((uint32_t) r << 16) | 0xFF000000u;
+uint32_t desktop_color(uint8_t b, uint8_t g, uint8_t r) {
+    return (uint32_t)b | ((uint32_t)g << 8) | ((uint32_t)r << 16) | 0xFF000000u;
 }
 
-static inline void desktop_put_pixel (uint32_t x, uint32_t y, uint32_t c) {
-    gfx_hline (x, y, 1, c);
+static inline void desktop_put_pixel(uint32_t x, uint32_t y, uint32_t c) {
+    gfx_hline(x, y, 1, c);
+}
+
+/* ====== 基础图形绘制 ====== */
+
+void desktop_draw_line(uint32_t x0, uint32_t y0, uint32_t x1, uint32_t y1, uint32_t color) {
+    gfx_line(x0, y0, x1, y1, color);
+}
+
+void desktop_draw_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+    if (w == 0 || h == 0) return;
+    gfx_hline(x, y, w, color);
+    gfx_hline(x, y + h - 1, w, color);
+    gfx_vline(x, y, h, color);
+    gfx_vline(x + w - 1, y, h, color);
+}
+
+void desktop_fill_rect(uint32_t x, uint32_t y, uint32_t w, uint32_t h, uint32_t color) {
+    gfx_fill_rect(x, y, w, h, color);
+}
+
+static void circle_points(uint32_t cx, uint32_t cy, uint32_t x, uint32_t y, uint32_t color, int fill) {
+    if (fill) {
+        gfx_hline(cx - x, cy + y, 2 * x + 1, color);
+        gfx_hline(cx - x, cy - y, 2 * x + 1, color);
+        gfx_hline(cx - y, cy + x, 2 * y + 1, color);
+        gfx_hline(cx - y, cy - x, 2 * y + 1, color);
+    } else {
+        desktop_put_pixel(cx + x, cy + y, color);
+        desktop_put_pixel(cx - x, cy + y, color);
+        desktop_put_pixel(cx + x, cy - y, color);
+        desktop_put_pixel(cx - x, cy - y, color);
+        desktop_put_pixel(cx + y, cy + x, color);
+        desktop_put_pixel(cx - y, cy + x, color);
+        desktop_put_pixel(cx + y, cy - x, color);
+        desktop_put_pixel(cx - y, cy - x, color);
+    }
+}
+
+static void desktop_circle(uint32_t cx, uint32_t cy, uint32_t r, uint32_t color, int fill) {
+    int32_t x = (int32_t)r;
+    int32_t y = 0;
+    int32_t err = 1 - (int32_t)x;
+    while (x >= y) {
+        circle_points(cx, cy, (uint32_t)x, (uint32_t)y, color, fill);
+        y++;
+        if (err < 0) {
+            err += 2 * y + 1;
+        } else {
+            x--;
+            err += 2 * (y - x) + 1;
+        }
+    }
+}
+
+void desktop_draw_circle(uint32_t cx, uint32_t cy, uint32_t r, uint32_t color) {
+    desktop_circle(cx, cy, r, color, 0);
+}
+
+void desktop_fill_circle(uint32_t cx, uint32_t cy, uint32_t r, uint32_t color) {
+    desktop_circle(cx, cy, r, color, 1);
+}
+
+void desktop_draw_polygon(const uint32_t* xs, const uint32_t* ys, int n, uint32_t color) {
+    if (!xs || !ys || n < 2) return;
+    for (int i = 0; i < n; ++i) {
+        int j = (i + 1) % n;
+        gfx_line(xs[i], ys[i], xs[j], ys[j], color);
+    }
 }
 
 /* =========================
@@ -431,6 +499,10 @@ static void desktop_redraw_all (void) {
 int desktop_init (void) {
     if (gfx_init() != 0) return -1;
 
+    s_nwins = 0;
+    desktop_startmenu_clear();
+    s_start_open = 0;
+
     desktop_redraw_all();
     gfx_present (NULL);
 
@@ -484,29 +556,50 @@ void desktop_cursor_move (uint32_t x, uint32_t y) {
     gfx_present(&r);
 }
 
-void desktop_show_init (void) {
-    desk_window_t a = {
-        .x = 40, .y = 60, .w = 280, .h = 160,
-        .color_body  = desktop_color (0xF0, 0xE8, 0xD8),
-        .color_title = desktop_color (0xA0, 0xD0, 0xFF),
-        .title       = "Welcome"
-    };
-    desk_window_t b = {
-        .x = 140, .y = 120, .w = 320, .h = 200,
-        .color_body  = desktop_color (0xF8, 0xF0, 0xF0),
-        .color_title = desktop_color (0xFF, 0xB0, 0x70),
-        .title       = "Settings"
-    };
-    desk_window_t c = {
-        .x = gfx_width() - 220, .y = 90, .w = 200, .h = 140,
-        .color_body  = desktop_color (0xE8, 0xFF, 0xF0),
-        .color_title = desktop_color (0x90, 0xF0, 0xC0),
-        .title       = "About"
-    };
+static desk_window_t s_win_welcome = {
+    .x = 40, .y = 60, .w = 280, .h = 160,
+    .title       = "Welcome",
+};
 
-    desktop_add_window (&a);
-    desktop_add_window (&b);
-    desktop_add_window (&c);
+static desk_window_t s_win_settings = {
+    .x = 140, .y = 120, .w = 320, .h = 200,
+    .title       = "Settings",
+};
+
+static desk_window_t s_win_about = {
+    .x = 0, /* x will be adjusted when shown */
+    .y = 90, .w = 200, .h = 140,
+    .title       = "About",
+};
+
+static void start_launch_window(void* user) {
+    if (!user) return;
+    const desk_window_t* win = (const desk_window_t*)user;
+    desk_window_t tmp = *win;
+    if (tmp.x == 0 && win == &s_win_about) {
+        tmp.x = gfx_width() - tmp.w - 20;
+    }
+    desktop_add_window(&tmp);
+}
+
+void desktop_show_init (void) {
+    s_win_welcome.color_body = desktop_color (0xF0, 0xE8, 0xD8);
+    s_win_welcome.color_title = desktop_color (0xA0, 0xD0, 0xFF);
+
+    s_win_settings.color_body  = desktop_color (0xF8, 0xF0, 0xF0);
+    s_win_settings.color_title = desktop_color (0xFF, 0xB0, 0x70);
+
+    s_win_about.color_body  = desktop_color (0xE8, 0xFF, 0xF0),
+    s_win_about.color_title = desktop_color (0x90, 0xF0, 0xC0),
+
+    desktop_startmenu_clear();
+    desktop_startmenu_add("Welcome",  start_launch_window, (void*)&s_win_welcome);
+    desktop_startmenu_add("Settings", start_launch_window, (void*)&s_win_settings);
+    desktop_startmenu_add("About",    start_launch_window, (void*)&s_win_about);
+
+    start_launch_window((void*)&s_win_welcome);
+    start_launch_window((void*)&s_win_settings);
+    start_launch_window((void*)&s_win_about);
 }
 
 void desktop_poll_keyboard(virtio_kbd_t* g_kbd) {

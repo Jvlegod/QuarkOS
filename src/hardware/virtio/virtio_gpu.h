@@ -25,7 +25,6 @@
 #define VRING_OFF_USED    ALIGN_UP(VRING_OFF_AVAIL + VRING_AVAIL_SIZE, VRING_ALIGN)
 #define VRING_AREA_SIZE   (VRING_OFF_USED + VRING_USED_SIZE)
 
-static void bzero(void* p, size_t n){ unsigned char* d=(unsigned char*)p; while(n--) *d++=0; }
 static inline uint32_t BGRA(uint8_t b,uint8_t g,uint8_t r){
     return (uint32_t)b | ((uint32_t)g<<8) | ((uint32_t)r<<16) | 0xFF000000u;
 }

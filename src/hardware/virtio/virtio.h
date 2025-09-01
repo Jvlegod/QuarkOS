@@ -12,6 +12,7 @@
 /* ---- Virtqueue desc flags ---- */
 #define VIRTQ_DESC_F_NEXT    1
 #define VIRTQ_DESC_F_WRITE   2
+#define VIRTQ_DESC_F_INDIRECT 4 
 
 /* ---- Device status ---- */
 #define VIRTIO_STATUS_ACK         1
@@ -61,6 +62,8 @@
 #define MMIO_QUEUE_ALIGN          0x03c
 #define MMIO_QUEUE_PFN            0x040
 
+#define MMIO_MAGIC_HEADER         0x74726976
+
 /* ---- Virtqueue structs ---- */
 struct virtq_desc {
     uint64_t addr;
@@ -70,7 +73,7 @@ struct virtq_desc {
 } __attribute__((packed));
 
 struct virtq_avail {
-    uint16_t flags;
+    uint16_t flags; 
     uint16_t idx;
     uint16_t ring[QUEUE_SIZE];
     /* uint16_t used_event; // optional */
@@ -99,5 +102,7 @@ static inline void wr64(volatile uint8_t *base, uint32_t off_low, uint64_t val){
     w32(base + off_low,     (uint32_t)(val & 0xffffffffu));
     w32(base + off_low + 4, (uint32_t)(val >> 32));
 }
+
+static void bzero(void* p, size_t n){ unsigned char* d=(unsigned char*)p; while(n--) *d++=0; }
 
 #endif /* __VIRTIO_H__ */

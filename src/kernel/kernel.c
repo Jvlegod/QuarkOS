@@ -13,6 +13,8 @@
 #include "virtio_tablet.h"
 #include "fs.h"
 #include "debug.h"
+#include "user.h"
+
 
 void start_kernel(void)
 {
@@ -33,6 +35,7 @@ void start_kernel(void)
         while (1);
     }
 	fs_test();
+    user_init();
     if (gfx_init() != 0) {
 		LOG_ERROR("[BOOT] gfx(virtio gpu) init failed!\r\n");
         while (1);

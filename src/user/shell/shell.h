@@ -43,5 +43,8 @@ int cmd_ps(int argc, char **argv);
 int cmd_login(int argc, char **argv);
 int cmd_su(int argc, char **argv);
 int cmd_logout(int argc, char **argv);
+int cmd_useradd(int argc, char **argv);
+int cmd_whoami(int argc, char **argv);
+int cmd_users(int argc, char **argv);
 
 #endif

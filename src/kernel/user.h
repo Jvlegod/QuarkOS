@@ -18,6 +18,9 @@ extern struct user user_table[MAX_USERS];
 
 int user_create(const char *name, const char *password, uid_t uid);
 int user_auth(const char *name, const char *password, uid_t *uid);
+void user_init(void);
+int user_add(const char *name, const char *password, uid_t *uid);
+const char* user_get_name(uid_t uid);
 long getuid(void);
 int setuid(uid_t uid);
 

@@ -35,6 +35,9 @@ static struct shell_command cmd_table[] = {
     {"login",  cmd_login,  "login user"},
     {"su",     cmd_su,     "switch user"},
     {"logout", cmd_logout, "logout"},
+    {"useradd",cmd_useradd,"add user"},
+    {"whoami", cmd_whoami, "current user"},
+    {"users",  cmd_users,  "list users"},
     {NULL, NULL, NULL}
 };
 
@@ -146,6 +149,41 @@ int cmd_su(int argc, char **argv) {
 
 int cmd_logout(int argc, char **argv) {
     return SHELL_EXIT;
+}
+
+int cmd_useradd(int argc, char **argv) {
+    if (argc < 3) {
+        SHELL_PRINTF("usage: useradd <user> <password>\r\n");
+        return -1;
+    }
+    uid_t uid;
+    if (user_add(argv[1], argv[2], &uid) != 0) {
+        SHELL_PRINTF("useradd failed\r\n");
+        return -1;
+    }
+    SHELL_PRINTF("user %s created with uid %d\r\n", argv[1], uid);
+    return 0;
+}
+
+int cmd_whoami(int argc, char **argv) {
+    (void)argc; (void)argv;
+    const char *name = user_get_name(getuid());
+    if (name) {
+        SHELL_PRINTF("%s\r\n", name);
+    } else {
+        SHELL_PRINTF("%d\r\n", getuid());
+    }
+    return 0;
+}
+
+int cmd_users(int argc, char **argv) {
+    (void)argc; (void)argv;
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (user_table[i].name[0] != '\0') {
+            SHELL_PRINTF("%d:%s\r\n", user_table[i].uid, user_table[i].name);
+        }
+    }
+    return 0;
 }
 
 

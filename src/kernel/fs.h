@@ -5,6 +5,7 @@
 #include "virtio.h"
 #include "cstdlib.h"
 #include "virtio.h"
+#include "user.h"
 
 // block 0         : 未用/保留
 // block 1         : 超级块(superblock)
@@ -34,6 +35,23 @@
 
 enum fs_inode_type { FS_IT_NONE = 0, FS_IT_FILE = 1, FS_IT_DIR = 2 };
 
+#define FS_O_READ  1
+#define FS_O_WRITE 2
+
+struct fs_inode {
+    uint16_t type;        // enum fs_inode_type
+    uint16_t links;       // 链接计数
+    uid_t    owner;       // 文件所有者
+    uint16_t mode;        // 权限位
+    uint16_t pad;         // 对齐填充
+    uint32_t size;        // 字节数
+    uint32_t nblocks;     // 数据块数量
+    uint32_t direct[10];  // 直接块
+    uint32_t reserved[17];// 预留
+} __attribute__((packed));
+
+STATIC_ASSERT(sizeof(struct fs_inode) == FS_INODE_SIZE, "inode size 128");
+
 int fs_mount(void);
 
 int fs_format(uint64_t total_sectors);
@@ -43,6 +61,7 @@ int fs_mount_or_mkfs(uint64_t total_sectors);
 int fs_ls(const char* path);
 int fs_mkdir(const char* path);
 int fs_touch(const char* path);
+int fs_create(const char* path, uint16_t mode);
 int fs_chdir(const char* path);
 int fs_read_all(const char* path, void* buf, unsigned cap);
 int fs_write_all(const char* path, const void* data, unsigned n);
@@ -52,5 +71,6 @@ int fs_rmdir(const char* path);
 int fs_typeof(const char* path, uint16_t* out_type);
 int fs_is_file(const char* path);
 int fs_is_dir(const char* path);
+int fs_open(const char* path, int flags);
 
 #endif /* FS_H */

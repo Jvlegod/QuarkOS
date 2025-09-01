@@ -2,6 +2,7 @@
 #include "virtio_blk.h"
 #include "ktypes.h"
 #include "kprintf.h"
+#include "task.h"
 
 static char g_cwd[FS_PATH_MAX] = "/";
 
@@ -18,17 +19,6 @@ struct fs_super {
     uint32_t root_ino;           // = 1
 };
 STATIC_ASSERT(sizeof(struct fs_super) <= 512, "super fits");
-
-struct fs_inode {
-    uint16_t type;        // enum fs_inode_type
-    uint16_t links;       // 链接计数（目录/文件引用）
-    uint32_t size;        // 字节数（目录则为目录项数*64 或者使用计数）
-    uint32_t nblocks;     // 数据块数量
-    uint32_t direct[10];  // 直接块号（绝对块号）
-    uint32_t reserved[19];// 预留给将来的间接块等
-} __attribute__((packed));
-
-STATIC_ASSERT(sizeof(struct fs_inode) == FS_INODE_SIZE, "inode size 128");
 
 struct fs_dirent {
     uint32_t ino;             // 0 = 空
@@ -124,6 +114,16 @@ static int free_dblock(uint32_t abs_blk){
     bitmap_clear(bm, i);
     return write_data_bitmap(bm);
 }
+
+static int inode_has_perm(const struct fs_inode* ino, int write){
+    uid_t uid = task_get_current_uid();
+    if(uid == 0) return 1; // root
+    uint16_t mode = ino->mode;
+    uint16_t bits = (uid == ino->owner) ? (mode >> 6) & 7 : mode & 7;
+    return write ? (bits & 2) : (bits & 4);
+}
+
+static int lookup_file_abs(const char* abs_path, uint32_t* out_ino_id, struct fs_inode* out_ino);
 
 static void fs_to_abs(const char* path, char out[FS_PATH_MAX]) {
     char tmp[FS_PATH_MAX];
@@ -337,6 +337,8 @@ int fs_format(uint64_t total_sectors){
     root.links = 1;
     root.size = 0;
     root.nblocks = 0;
+    root.owner = 0;
+    root.mode  = 0755;
     if(inode_write(1, &root)!=0) return -1;
 
     g_mounted = 1;
@@ -379,6 +381,8 @@ static int create_empty(const char* path, int as_dir){
     node.links = 1;
     node.size = 0;
     node.nblocks = 0;
+    node.owner = task_get_current_uid();
+    node.mode  = as_dir ? 0755 : 0644;
     if(inode_write(cino, &node)!=0){ free_inode(cino); return -1; }
 
     if(dir_add_entry(&parent, pino, name, cino)!=0){
@@ -416,6 +420,8 @@ static int create_empty_abs(const char* abs_path, int as_dir){
     node.links = 1;
     node.size = 0;
     node.nblocks = 0;
+    node.owner = task_get_current_uid();
+    node.mode  = as_dir ? 0755 : 0644;
     if(inode_write(cino, &node)!=0){ free_inode(cino); return -1; }
 
     if(dir_add_entry(&parent, pino, name, cino)!=0){
@@ -429,10 +435,30 @@ int fs_mkdir(const char* path){
     return create_empty_abs(abs, /*as_dir=*/1);
 }
 
-int fs_touch(const char* path){
+int fs_create(const char* path, uint16_t mode){
     char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
-    return create_empty_abs(abs, /*as_dir=*/0);
+    if(create_empty_abs(abs, /*as_dir=*/0)!=0) return -1;
+    struct fs_inode ino; uint32_t ino_id;
+    if(lookup_file_abs(abs, &ino_id, &ino)!=0) return -1;
+    ino.mode = mode;
+    ino.owner = task_get_current_uid();
+    return inode_write(ino_id, &ino);
 }
+
+int fs_touch(const char* path){
+    return fs_create(path, 0644);
+}
+
+int fs_open(const char* path, int flags){
+    if(!g_mounted) return -1;
+    char abs[FS_PATH_MAX]; fs_to_abs(path, abs);
+    struct fs_inode ino; uint32_t ino_id;
+    if(lookup_file_abs(abs, &ino_id, &ino)!=0) return -1;
+    if((flags & FS_O_WRITE) && !inode_has_perm(&ino,1)) return -1;
+    if((flags & FS_O_READ) && !inode_has_perm(&ino,0)) return -1;
+    return 0;
+}
+
 
 int fs_ls(const char* path){
     char abs[FS_PATH_MAX];
@@ -528,6 +554,8 @@ int fs_read_all(const char* path, void* buf, unsigned cap) {
         return 0;
     }
 
+    if(!inode_has_perm(&ino, 0)) return -1;
+
     unsigned to_read = ino.size;
     if (to_read > cap) to_read = cap;
 
@@ -553,6 +581,8 @@ int fs_write_all(const char* path, const void* data, unsigned n) {
     if (lookup_file_abs(abs, &ino_id, &ino) != 0) {
         if (fs_touch(abs) != 0) return -1;
         if (lookup_file_abs(abs, &ino_id, &ino) != 0) return -1;
+    } else {
+        if(!inode_has_perm(&ino, 1)) return -1;
     }
 
     unsigned need = (n + FS_BLOCK_SIZE - 1) / FS_BLOCK_SIZE;
@@ -675,6 +705,9 @@ int fs_rm(const char* path) {
     if (inode_read(de.ino, &ino) != 0) return -1;
     if (ino.type != FS_IT_FILE) return -1;
 
+    uid_t uid = task_get_current_uid();
+    if(uid != 0 && uid != ino.owner) return -1;
+
     for (uint32_t i = 0; i < ino.nblocks && i < 10; ++i) {
         if (ino.direct[i]) {
             if (free_dblock(ino.direct[i]) != 0) return -1;
@@ -711,6 +744,9 @@ int fs_rmdir(const char* path) {
     struct fs_inode dino;
     if (inode_read(de.ino, &dino) != 0) return -1;
     if (dino.type != FS_IT_DIR) return -1;
+
+    uid_t uid = task_get_current_uid();
+    if(uid != 0 && uid != dino.owner) return -1;
 
     if (!dir_is_empty(&dino)) return -1;
 

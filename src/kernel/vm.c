@@ -11,6 +11,33 @@ static inline int pt_index(uintptr_t va, int level) {
     return (va >> (12 + level * 9)) & 0x1FF;
 }
 
+static void vm_dump_rec(pagetable_t pt, int level, uintptr_t va_base) {
+    for (int i = 0; i < 512; i+=8) {
+        pte_t pte = pt[i];
+        if (!(pte & PTE_V))
+            continue;
+        uintptr_t va = va_base | ((uintptr_t)i << (12 + level * 9));
+        uintptr_t pa = ((pte >> PTE_PPN_SHIFT) << 12);
+        if ((pte & (PTE_R | PTE_W | PTE_X)) || level == 0) {
+            char perm[5];
+            int n = 0;
+            if (pte & PTE_R) perm[n++] = 'R';
+            if (pte & PTE_W) perm[n++] = 'W';
+            if (pte & PTE_X) perm[n++] = 'X';
+            if (pte & PTE_U) perm[n++] = 'U';
+            perm[n] = '\0';
+            kprintf("[VM] %lx -> %lx %s\n", va, pa, perm);
+        } else {
+            pagetable_t next = (pagetable_t)(pa);
+            vm_dump_rec(next, level - 1, va);
+        }
+    }
+}
+
+static void vm_dump(pagetable_t pt) {
+    vm_dump_rec(pt, 2, 0);
+}
+
 static pte_t *walk_create(pagetable_t pt, uintptr_t va) {
     for (int level = 2; level > 0; level--) {
         int idx = pt_index(va, level);
@@ -55,6 +82,9 @@ void vm_init(void) {
     vm_map(kernel_pagetable, 0x80000000UL, 0x80000000UL, 0x08000000UL,
            PTE_R | PTE_W | PTE_X | PTE_U);
     // map peripherals around 0x10000000
-    vm_map(kernel_pagetable, 0x10000000UL, 0x10000000UL, 0x01000000UL, PTE_R|PTE_W);
+    vm_map(kernel_pagetable, 0x10000000UL, 0x10000000UL,
+           0x01000000UL, PTE_R | PTE_W | PTE_U);
+    vm_dump(kernel_pagetable);
     vm_enable(kernel_pagetable);
+    kprintf("[VM] paging enabled\n");
 }

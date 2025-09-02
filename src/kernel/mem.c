@@ -29,7 +29,16 @@ void *mem_alloc(size_t size) {
             if (blk->size > size + sizeof(struct mem_block)) {
                 struct mem_block *new = (struct mem_block *)((char *)blk + size);
                 new->size = blk->size - size;
-                list_add(&new->list, &free_list);
+                // insert remaining block keeping address order
+                struct list_head *p;
+                for (p = free_list.next; p != &free_list; p = p->next) {
+                    struct mem_block *curr = container_of(p, struct mem_block, list);
+                    if (curr > new) break;
+                }
+                new->list.next = p;
+                new->list.prev = p->prev;
+                p->prev->next = &new->list;
+                p->prev = &new->list;
                 blk->size = size;
             }
 

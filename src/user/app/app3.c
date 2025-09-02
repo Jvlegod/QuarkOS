@@ -11,5 +11,5 @@ static void demo_click(void *user) {
 void app3_entry(void *arg) {
     SHELL_PRINTF("app3 running!\r\n");
     desktop_add_app(80, DESKTOP_TASKBAR_H + 40, "demo", QuarkOS_icon_data, demo_click, NULL);
-    (void)arg;
+    
 }

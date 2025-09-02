@@ -1,0 +1,17 @@
+# .coderabbit.yaml
+language: "zh-CN"
+
+reviews:
+  profile: "chill"
+
+high_level_summary: true
+auto_review:
+  enabled: true
+  drafts: false
+
+integrations:
+  github:
+    pr_comments: true
+    inline_comments: true
+    summary_comments: true
+    status_checks: true

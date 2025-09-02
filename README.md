@@ -65,6 +65,21 @@ we also support app logo generation.
 
 you can use `src/tools/icon2c.py` to finish it.
 
+### 2.2 Multiple Users
+
+for example, you can use command to add users.
+
+```bash
+# look for users
+users
+
+whoami
+
+# add users
+
+adduser
+```
+
 ## 3 Debug
 
 step1: Compile and debug version

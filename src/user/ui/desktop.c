@@ -3,6 +3,10 @@
 #include "kprintf.h"
 #include "ui_config.h"
 #include "cstdlib.h"
+#include "app.h"
+
+// put icons here
+#include "QuarkOS.h"
 
 /* =========================
  * 工具与通用
@@ -379,10 +383,18 @@ static int hit_start_menu(int x, int y){
 }
 
 // Apps
+// label is unique
 int desktop_add_app(uint32_t x, uint32_t y, const char* label,
                     const uint32_t* icon, desk_app_cb cb, void* user)
 {
     if (s_napps >= DESKTOP_MAX_APPS) return -1;
+
+    for (int i = 0; i < s_napps; i ++) {
+        if (strcmp(label, s_apps[i].label) == 0) {
+            return -1;
+        }
+    }
+
     s_apps[s_napps] = (desk_app_t){ x, y, -1, label, icon, cb, user };
     int idx = s_napps++;
     desktop_redraw_full();
@@ -697,6 +709,7 @@ void desktop_show_init (void) {
 
 void desktop_app_init() {
     // you can put your app here, if you want to init it by init.
+    desktop_add_app(160, DESKTOP_TASKBAR_H + 40, "game", QuarkOS_icon_data, game_entry, NULL);
 }
 
 void desktop_poll_keyboard(virtio_kbd_t* g_kbd) {

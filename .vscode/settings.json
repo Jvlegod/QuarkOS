@@ -110,6 +110,9 @@
         "version": "c",
         "desktop.h": "c",
         "virtio_input.h": "c",
-        "user.h": "c"
+        "user.h": "c",
+        "app.h": "c",
+        "quarkos.h": "c",
+        "stdint.h": "c"
     }
 }

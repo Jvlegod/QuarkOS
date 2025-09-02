@@ -49,4 +49,8 @@ static inline uint64_t atomic_load_u64(const volatile uint64_t *ptr) {
 #define READ_ONCE(x)  (*(volatile __typeof__(x) *)&(x))
 #define WRITE_ONCE(x,v) do { (*(volatile __typeof__(x) *)&(x)) = (v); } while (0)
 
+static inline void sfence_vma(void) {
+    __asm__ volatile("sfence.vma zero, zero" ::: "memory");
+}
+
 #endif /* __REGS_H__ */

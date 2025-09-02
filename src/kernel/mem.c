@@ -1,5 +1,6 @@
 #include "mem.h"
 #include "uart.h"
+#include "cstdlib.h"
 
 LIST_HEAD(free_list);
 
@@ -79,5 +80,22 @@ void mem_free(void *ptr) {
             blk->size += next->size;
             list_del(&next->list);
         }
+    }
+}
+
+void *page_alloc(void) {
+    void *raw = mem_alloc(PAGE_SIZE + MEM_ALIGNMENT);
+    if (!raw)
+        return NULL;
+    uintptr_t aligned = ALIGN_UP((uintptr_t)raw);
+    ((void **)aligned)[-1] = raw;
+    memset((void *)aligned, 0, PAGE_SIZE);
+    return (void *)aligned;
+}
+
+void page_free(void *page) {
+    if (page) {
+        void *raw = ((void **)page)[-1];
+        mem_free(raw);
     }
 }

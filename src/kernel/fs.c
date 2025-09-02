@@ -529,6 +529,33 @@ const char* fs_get_cwd(void){
     return g_cwd;
 }
 
+int fs_stat(const char* path, uid_t* owner, uint16_t* mode) {
+    if (!g_mounted) return -1;
+    if (!path) return -1;
+
+    char abs[FS_PATH_MAX];
+    fs_to_abs(path, abs);
+
+    struct fs_inode node;
+
+    if (strcmp(abs, "/") == 0) {
+        if (inode_read(1, &node) != 0) return -1;
+    } else {
+        uint32_t pino; const char* name;
+        if (resolve_parent(abs, &pino, &name) != 0) return -1;
+        struct fs_inode parent;
+        if (inode_read(pino, &parent) != 0) return -1;
+        struct fs_dirent de;
+        if (dir_find_entry(&parent, name, &de, 0, 0) != 0) return -1;
+        if (inode_read(de.ino, &node) != 0) return -1;
+    }
+
+    if (owner) *owner = node.owner;
+    if (mode)  *mode  = node.mode;
+    return 0;
+}
+
+
 static int lookup_file_abs(const char* abs_path, uint32_t* out_ino_id, struct fs_inode* out_ino){
     if (strcmp(abs_path, "/") == 0) return -1;
     uint32_t pino; const char* name;

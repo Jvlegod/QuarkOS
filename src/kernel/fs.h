@@ -63,6 +63,7 @@ int fs_mkdir(const char* path);
 int fs_touch(const char* path);
 int fs_create(const char* path, uint16_t mode);
 int fs_chdir(const char* path);
+int fs_stat(const char* path, uid_t* owner, uint16_t* mode);
 int fs_read_all(const char* path, void* buf, unsigned cap);
 int fs_write_all(const char* path, const void* data, unsigned n);
 const char* fs_get_cwd(void);

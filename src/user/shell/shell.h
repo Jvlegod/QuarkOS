@@ -40,6 +40,7 @@ int cmd_ed(int argc, char** argv);
 int cmd_rm(int argc, char** argv);
 int cmd_clear(int argc, char** argv);
 int cmd_ps(int argc, char **argv);
+int cmd_perm(int argc, char **argv);
 int cmd_login(int argc, char **argv);
 int cmd_su(int argc, char **argv);
 int cmd_logout(int argc, char **argv);

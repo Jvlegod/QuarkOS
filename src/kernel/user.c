@@ -1,5 +1,6 @@
 #include "cstdlib.h"
 #include "user.h"
+#include "fs.h"
 
 struct user user_table[MAX_USERS];
 static uid_t next_uid = 1;
@@ -13,9 +14,63 @@ static int find_free_slot() {
     return -1;
 }
 
+static void user_save(void) {
+    char buf[1024];
+    int off = 0;
+    for (int i = 0; i < MAX_USERS; i++) {
+        if (user_table[i].name[0] == '\0') continue;
+        off += snprintf(buf + off, sizeof(buf) - off, "%d %s %s\n",
+                        user_table[i].uid,
+                        user_table[i].name,
+                        user_table[i].password);
+    }
+    fs_mkdir("/etc");
+    fs_create("/etc/passwd", 0644);
+    fs_write_all("/etc/passwd", buf, off);
+}
+
+static void user_load(void) {
+    char buf[1024];
+    int n = fs_read_all("/etc/passwd", buf, sizeof(buf) - 1);
+    if (n <= 0) return;
+    buf[n] = '\0';
+    char *p = buf;
+    int max_uid = 0;
+    while (*p) {
+        while (*p == '\n' || *p == '\r') p++;
+        if (!*p) break;
+        int uid = 0;
+        while (is_digit(*p)) { uid = uid*10 + (*p - '0'); p++; }
+        if (*p != ' ') break; p++;
+        char name[USER_NAME_MAX]; int ni = 0;
+        while (*p && *p != ' ' && *p != '\n' && ni < USER_NAME_MAX-1) {
+            name[ni++] = *p++;
+        }
+        name[ni] = '\0';
+        if (*p != ' ') break; p++;
+        char pass[USER_PASS_MAX]; int pi = 0;
+        while (*p && *p != '\n' && pi < USER_PASS_MAX-1) {
+            pass[pi++] = *p++;
+        }
+        pass[pi] = '\0';
+        while (*p && *p != '\n') p++;
+        if (*p == '\n') p++;
+        user_create(name, pass, uid);
+        if (uid >= max_uid) max_uid = uid + 1;
+    }
+    if (max_uid > next_uid) next_uid = max_uid;
+}
+
 void user_init(void) {
     memset(user_table, 0, sizeof(user_table));
-    user_create("root", "root", 0);
+    fs_mkdir("/home");
+    fs_mkdir("/etc");
+    user_load();
+    if (user_get_name(0) == NULL) {
+        user_create("root", "root", 0);
+        user_save();
+    }
+    fs_mkdir("/home/root");
 }
 
 int user_create(const char *name, const char *password, uid_t uid) {
@@ -50,6 +105,7 @@ int user_add(const char *name, const char *password, uid_t *uid) {
     if (uid) {
         *uid = new_uid;
     }
+    user_save();
     return 0;
 }
 

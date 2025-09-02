@@ -32,6 +32,7 @@ static struct shell_command cmd_table[] = {
     {"rm",     cmd_rm,     "remove file/dir"},
     {"clear",  cmd_clear,  "clear the screen"},
     {"ps",     cmd_ps,     "list tasks"},
+    {"perm",   cmd_perm,   "show file permissions"},
     {"login",  cmd_login,  "login user"},
     {"su",     cmd_su,     "switch user"},
     {"logout", cmd_logout, "logout"},
@@ -118,6 +119,32 @@ int cmd_ps(int argc, char **argv) {
     return 0;
 }
 
+int cmd_perm(int argc, char **argv) {
+    if (argc < 2) {
+        SHELL_PRINTF("usage: perm <path>\r\n");
+        return -1;
+    }
+    uid_t owner; uint16_t mode;
+    if (fs_stat(argv[1], &owner, &mode) != 0) {
+        SHELL_PRINTF("perm: failed\r\n");
+        return -1;
+    }
+    char perms[10];
+    perms[0] = (mode & 0400) ? 'r' : '-';
+    perms[1] = (mode & 0200) ? 'w' : '-';
+    perms[2] = (mode & 0100) ? 'x' : '-';
+    perms[3] = (mode & 0040) ? 'r' : '-';
+    perms[4] = (mode & 0020) ? 'w' : '-';
+    perms[5] = (mode & 0010) ? 'x' : '-';
+    perms[6] = (mode & 0004) ? 'r' : '-';
+    perms[7] = (mode & 0002) ? 'w' : '-';
+    perms[8] = (mode & 0001) ? 'x' : '-';
+    perms[9] = '\0';
+    const char *name = user_get_name(owner);
+    SHELL_PRINTF("%s %d %s\r\n", perms, owner, name ? name : "");
+    return 0;
+}
+
 static int do_login(const char *name, const char *password) {
     uid_t uid;
     if (user_auth(name, password, &uid) != 0) {
@@ -125,8 +152,15 @@ static int do_login(const char *name, const char *password) {
         return -1;
     }
     uid_t old = getuid();
+    char old_cwd[FS_PATH_MAX];
+    strcpy(old_cwd, fs_get_cwd());
     setuid(uid);
+    char home[FS_PATH_MAX];
+    snprintf(home, sizeof(home), "/home/%s", name);
+    fs_mkdir(home);
+    fs_chdir(home);
     shell_main();
+    fs_chdir(old_cwd);
     setuid(old);
     return 0;
 }
@@ -161,6 +195,12 @@ int cmd_useradd(int argc, char **argv) {
         SHELL_PRINTF("useradd failed\r\n");
         return -1;
     }
+    char home[FS_PATH_MAX];
+    snprintf(home, sizeof(home), "/home/%s", argv[1]);
+    uid_t old = getuid();
+    setuid(uid);
+    fs_mkdir(home);
+    setuid(old);
     SHELL_PRINTF("user %s created with uid %d\r\n", argv[1], uid);
     return 0;
 }

@@ -296,7 +296,7 @@ static int shell_parse_command(char *cmdline, char *argv[]) {
 }
 
 void shell_main() {
-    SHELL_PRINTF("\r\n%s-%s\r\n", OS_NAME, VERSION(1.0));
+    SHELL_PRINTF("\r\n%s-%s\r\n", OS_NAME, VERSION(2.0));
     const char **line = OS_ART;
     while (*line != NULL) {
         SHELL_PRINTF("%s\n", *line);
@@ -307,7 +307,7 @@ void shell_main() {
         char *argv[MAX_ARGC];
         int argc;
         memset(shell_buf, 0, sizeof(RING_BUF_SIZE));
-        SHELL_PRINTF("%s", SHELL_INFO);
+        SHELL_PRINTF("%s/%s> ", SHELL_INFO, user_get_name(getuid()));
         
         shell_uart_fflush(shell_buf);
 

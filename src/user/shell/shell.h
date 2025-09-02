@@ -6,7 +6,7 @@
 
 #define OS_NAME "QuarkOs"
 #define VERSION(id) "Version: "#id
-#define SHELL_INFO "sh> "
+#define SHELL_INFO "shell"
 
 #define SHELL_PRINTF(fmt, ...) \
     kprintf(fmt , ##__VA_ARGS__)

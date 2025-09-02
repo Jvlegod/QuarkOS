@@ -14,7 +14,7 @@
 #include "fs.h"
 #include "debug.h"
 #include "user.h"
-
+#include "vm.h"
 
 void start_kernel(void)
 {
@@ -24,6 +24,7 @@ void start_kernel(void)
 	timer_init();
 	mem_init((uintptr_t)_heap_start, (uintptr_t)_heap_end);
 	mem_test();
+	vm_init();
 	if (virtio_blk_init() != 0) {
         LOG_ERROR("[BOOT] virtio blk init failed!\r\n");
         while (1);

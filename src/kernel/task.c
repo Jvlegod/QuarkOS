@@ -33,12 +33,13 @@ static inline uint64_t* get_user_stack(int task_id) {
 
 // idle task
 static void idle_task() {
-    task_create(main, (void *)NULL, 0);
+    task_create(main, (void *)NULL, 1);
 
     while(1) {
         __asm__ volatile ("wfi");
     }
 }
+
 static void init_idle_task(int hartid) {
     struct task *idle = &tasks[hartid];
     

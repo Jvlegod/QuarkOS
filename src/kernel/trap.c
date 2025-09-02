@@ -36,6 +36,18 @@ static uint64_t handle_exception(uint64_t cause, uint64_t epc, uint64_t mtval, s
             LOG_ERROR("Illegal instruction at 0x%lx: 0x%lx\r\n", epc, mtval);
             handle_illegal_instruction();
             break;
+        case MCAUSE_INSTR_PAGE_FAULT:
+            LOG_ERROR("Instruction page fault at 0x%lx\r\n", epc);
+            while (1) { }
+            break;
+        case MCAUSE_LOAD_PAGE_FAULT:
+            LOG_ERROR("Load page fault at 0x%lx (addr 0x%lx)\r\n", epc, mtval);
+            while (1) { }
+            break;
+        case MCAUSE_STORE_PAGE_FAULT:
+            LOG_ERROR("Store page fault at 0x%lx (addr 0x%lx)\r\n", epc, mtval);
+            while (1) { }
+            break;
         default:
             LOG_ERROR("Unhandled exception: cause=%lx\r\n", cause);
             while(1);

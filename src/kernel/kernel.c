@@ -11,6 +11,7 @@
 #include "virtio_input.h"
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
+#include "virtio_net.h"
 #include "fs.h"
 #include "debug.h"
 #include "user.h"
@@ -43,12 +44,13 @@ void start_kernel(void)
     }
 	gpu_test();
 	input_init_all();
-	// if (input_init() != 0) {
-	// 	kprintf("[BOOT] input init failed!\r\n");
-    //     while (1);
-	// }
 
-	// input_test();
+	if(virtio_net_init() != 0) {
+		LOG_ERROR("[BOOT] virtio net init failed!\r\n");
+	} else {
+		lwip_port_init();
+	}
+
 	// task init should after uart and mem.
 	int hartid = read_tp();
 	task_init(hartid);

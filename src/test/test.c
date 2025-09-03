@@ -88,8 +88,6 @@ void blk_test(void) {
 void fs_test() {
     fs_mkdir("/etc");
     fs_touch("/etc/config");
-    fs_ls("/");
-    fs_ls("/etc");
     TEST_PRINTF("FS TEST PASSED\n");
 }
 

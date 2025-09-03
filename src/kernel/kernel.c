@@ -12,6 +12,7 @@
 #include "virtio_keyboard.h"
 #include "virtio_tablet.h"
 #include "virtio_net.h"
+#include "lwip_port.h"
 #include "fs.h"
 #include "debug.h"
 #include "user.h"

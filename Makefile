@@ -108,6 +108,7 @@ run: all
 	-device virtio-keyboard-device,bus=virtio-mmio-bus.1 \
 	-device virtio-tablet-device,bus=virtio-mmio-bus.2 \
 	-device virtio-gpu-device,bus=virtio-mmio-bus.3 \
+	-device virtio-net-device,bus=virtio-mmio-bus.4 \
 	-display gtk \
 	-kernel $(KERNEL_ELF) \
 	-monitor stdio \

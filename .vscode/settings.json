@@ -113,6 +113,7 @@
         "user.h": "c",
         "app.h": "c",
         "quarkos.h": "c",
-        "stdint.h": "c"
+        "stdint.h": "c",
+        "virtio_net.h": "c"
     }
 }
